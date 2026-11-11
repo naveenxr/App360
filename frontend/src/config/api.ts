@@ -8,11 +8,16 @@ const stripTrailingSlashes = (url: string): string => url.replace(/\/+$/, '');
 
 /**
  * Centralized API Base URL resolution.
- * - Uses NEXT_PUBLIC_API_URL when configured (normalized to include /api).
- * - In production, falls back to the deployed Catalyst AppSail backend URL.
- * - In local development only, falls back to http://localhost:9000/api.
+ * - In production, routes via same-origin `/api` so Next.js rewrites forward to
+ *   the deployed AppSail backend without cross-origin CORS preflight failures
+ *   (unless NEXT_PUBLIC_DIRECT_API='true' is explicitly set).
+ * - In local development, uses NEXT_PUBLIC_API_URL or defaults to http://localhost:9000/api.
  */
 export const resolveApiBaseUrl = (): string => {
+  if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_DIRECT_API !== 'true') {
+    return '/api';
+  }
+
   if (RAW_API_URL) {
     const cleaned = stripTrailingSlashes(RAW_API_URL);
     return cleaned.endsWith('/api') ? cleaned : `${cleaned}/api`;
@@ -22,7 +27,7 @@ export const resolveApiBaseUrl = (): string => {
     return `${LOCAL_DEV_ORIGIN}/api`;
   }
 
-  return `${PRODUCTION_BACKEND_ORIGIN}/api`;
+  return '/api';
 };
 
 /**
