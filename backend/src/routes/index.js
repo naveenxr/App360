@@ -8,6 +8,7 @@ const ingestionRoutes = require('./ingestion.routes');
 const alarmRoutes = require('./alarm.routes');
 const eventRoutes = require('./event.routes');
 const correlationRoutes = require('./correlation.routes');
+const topologyRoutes = require('./topology.routes');
 
 const router = express.Router();
 
@@ -21,5 +22,6 @@ router.use('/ingestion', ingestionRoutes);
 router.use('/alarms', alarmRoutes);
 router.use('/events', eventRoutes);
 router.use('/correlation', correlationRoutes);
+router.use('/topology', topologyRoutes);
 
 module.exports = router;
