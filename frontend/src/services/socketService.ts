@@ -64,7 +64,7 @@ class SocketService {
         reconnectionDelayMax: 5000,
         randomizationFactor: 0.5,
         timeout: 10000,
-        transports: ['websocket', 'polling'],
+        transports: ['polling', 'websocket'],
         autoConnect: true
       });
 
