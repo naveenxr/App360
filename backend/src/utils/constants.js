@@ -1,0 +1,26 @@
+const ROLES = {
+  ADMIN: 'ADMIN',
+  ENGINEER: 'ENGINEER',
+  VIEWER: 'VIEWER'
+};
+
+const MODULES = {
+  ALARM: 'ALARM',
+  MAP: 'MAP',
+  API: 'API',
+  USER_MANAGEMENT: 'USER_MANAGEMENT'
+};
+
+const ACTIONS = {
+  READ: 'READ',
+  CREATE: 'CREATE',
+  UPDATE: 'UPDATE',
+  DELETE: 'DELETE',
+  EXECUTE: 'EXECUTE'
+};
+
+module.exports = {
+  ROLES,
+  MODULES,
+  ACTIONS
+};

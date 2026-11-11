@@ -6,3 +6,4 @@ export interface HealthResponse {
 }
 
 export type ConnectionStatus = 'checking' | 'connected' | 'disconnected';
+

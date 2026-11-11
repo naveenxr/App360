@@ -26,3 +26,4 @@ class HealthService {
 }
 
 module.exports = new HealthService();
+
