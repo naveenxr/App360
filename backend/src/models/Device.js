@@ -65,3 +65,4 @@ deviceSchema.index({ type: 1, status: 1 });
 const Device = mongoose.models.Device || mongoose.model('Device', deviceSchema);
 
 module.exports = Device;
+

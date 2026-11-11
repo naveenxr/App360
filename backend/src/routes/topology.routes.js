@@ -33,3 +33,4 @@ router.get('/summary', requirePermission('map', 'read'), (req, res, next) =>
 );
 
 module.exports = router;
+

@@ -72,3 +72,4 @@ siteSchema.index({ 'coordinates.latitude': 1, 'coordinates.longitude': 1 });
 const Site = mongoose.models.Site || mongoose.model('Site', siteSchema);
 
 module.exports = Site;
+

@@ -33,3 +33,4 @@ class DeviceRepository extends BaseRepository {
 }
 
 module.exports = new DeviceRepository();
+

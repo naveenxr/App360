@@ -216,3 +216,4 @@ module.exports = {
   SITES_DATA,
   DEVICES_DATA
 };
+

@@ -65,3 +65,4 @@ export interface TopologyFilters {
   siteId?: string;
   type?: string;
 }
+

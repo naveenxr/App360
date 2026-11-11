@@ -134,7 +134,7 @@ export default function LoginPage() {
             <div className="grid grid-cols-3 gap-2 text-[11px]">
               <button
                 type="button"
-                onClick={() => handleQuickLogin('admin@app360.internal', 'AdminSecurePassword2026!')}
+                onClick={() => handleQuickLogin('admin@app360.internal', 'Admin@360!')}
                 className="py-1.5 px-2 rounded bg-slate-800 hover:bg-slate-700/80 text-slate-300 text-center border border-slate-700 transition-colors"
               >
                 ADMIN

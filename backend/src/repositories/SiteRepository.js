@@ -25,3 +25,4 @@ class SiteRepository extends BaseRepository {
 }
 
 module.exports = new SiteRepository();
+

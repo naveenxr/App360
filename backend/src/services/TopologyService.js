@@ -241,3 +241,4 @@ class TopologyService {
 }
 
 module.exports = new TopologyService();
+

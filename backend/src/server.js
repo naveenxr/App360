@@ -2,7 +2,7 @@ const app = require('./app');
 const config = require('./config/env');
 const { connectDatabase, disconnectDatabase } = require('./config/database');
 const { seedRoles } = require('./utils/seedRoles');
-const bootstrapAdmin = require('./utils/bootstrapAdmin');
+const { seedUsers } = require('./utils/seedUsers');
 const { seedTopology } = require('./utils/seedTopology');
 const { startIngestionJob, stopIngestionJob } = require('./jobs/ingestion.job');
 
@@ -16,8 +16,8 @@ const startServer = async () => {
     // 2. Idempotently seed default system roles (ADMIN, ENGINEER, VIEWER)
     await seedRoles();
 
-    // 3. Bootstrap initial system administrator from environment variables
-    await bootstrapAdmin();
+    // 3. Seed system users (Admin, Engineer, Viewer)
+    await seedUsers();
 
     // 4. Seed network topology sites and devices
     await seedTopology();
