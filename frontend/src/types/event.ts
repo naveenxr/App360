@@ -2,6 +2,13 @@ import { Alarm, SeverityLevel } from './alarm';
 
 export type EventStatus = 'OPEN' | 'ACKNOWLEDGED' | 'RESOLVED';
 
+export interface StatusHistoryEntry {
+  status: EventStatus;
+  changedBy?: { id: string; name: string; email: string } | string | null;
+  changedAt: string;
+  notes?: string;
+}
+
 export interface CorrelatedEvent {
   id: string;
   eventId: string;
@@ -14,6 +21,7 @@ export interface CorrelatedEvent {
   firstOccurredAt: string;
   lastOccurredAt: string;
   notes?: string;
+  statusHistory?: StatusHistoryEntry[];
   acknowledgedBy?: { id: string; name: string; email: string } | null;
   acknowledgedAt?: string | null;
   resolvedBy?: { id: string; name: string; email: string } | null;

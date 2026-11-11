@@ -33,5 +33,10 @@ router.post('/:id/resolve', requirePermission('alarm', 'update'), (req, res, nex
   EventController.resolveEvent(req, res, next)
 );
 
+// POST /api/events/:id/reopen - Event reopening
+router.post('/:id/reopen', requirePermission('alarm', 'update'), (req, res, next) =>
+  EventController.reopenEvent(req, res, next)
+);
+
 module.exports = router;
 

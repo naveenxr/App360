@@ -214,10 +214,50 @@ class RoleService {
 
   async getPermissionsMatrix() {
     const roles = await this.listRoles();
+
+    // Query all registered users from MongoDB and map them to their assigned role
+    const users = await UserRepository.model.find({}, 'name email roleId isActive createdAt').lean();
+    const usersByRoleId = {};
+    users.forEach((u) => {
+      const rId = u.roleId ? u.roleId.toString() : '';
+      if (!usersByRoleId[rId]) usersByRoleId[rId] = [];
+      usersByRoleId[rId].push({
+        id: u._id.toString(),
+        name: u.name,
+        email: u.email,
+        isActive: u.isActive,
+        createdAt: u.createdAt
+      });
+    });
+
+    const roleMap = {};
+    roles.forEach((r) => {
+      roleMap[(r.id || r._id).toString()] = r.name;
+    });
+
+    const enrichedRoles = roles.map((r) => {
+      const roleIdStr = (r.id || r._id).toString();
+      return {
+        ...r,
+        assignedUsers: usersByRoleId[roleIdStr] || []
+      };
+    });
+
     return {
       modules: MODULE_LIST,
       actions: ['create', 'read', 'update', 'delete'],
-      roles
+      roles: enrichedRoles,
+      users: users.map((u) => {
+        const roleIdStr = u.roleId ? u.roleId.toString() : null;
+        return {
+          id: u._id.toString(),
+          name: u.name,
+          email: u.email,
+          roleId: roleIdStr,
+          roleName: roleIdStr ? roleMap[roleIdStr] || 'UNKNOWN' : null,
+          isActive: u.isActive
+        };
+      })
     };
   }
 }

@@ -68,10 +68,13 @@ class EventService {
       deviceId: event.deviceId,
       severity: event.severity,
       status: event.status,
+      correlationRule: event.correlationRule || 'SAME_SITE_DEVICE_5MIN',
       firstOccurredAt: event.firstOccurredAt,
       lastOccurredAt: event.lastOccurredAt,
       alarmCount: event.alarmIds.length,
-      alarms: event.alarmIds
+      alarms: event.alarmIds,
+      notes: event.notes || '',
+      statusHistory: event.statusHistory || []
     };
   }
 
@@ -98,6 +101,16 @@ class EventService {
       event.notes = notes;
     }
 
+    if (!Array.isArray(event.statusHistory)) {
+      event.statusHistory = [];
+    }
+    event.statusHistory.push({
+      status: 'ACKNOWLEDGED',
+      changedBy: userId,
+      changedAt: new Date(),
+      notes: notes || 'Operator acknowledged incident'
+    });
+
     const savedEvent = await event.save();
     broadcastIncidentUpdated(savedEvent);
     return savedEvent;
@@ -119,6 +132,16 @@ class EventService {
       event.notes = notes;
     }
 
+    if (!Array.isArray(event.statusHistory)) {
+      event.statusHistory = [];
+    }
+    event.statusHistory.push({
+      status: 'RESOLVED',
+      changedBy: userId,
+      changedAt: new Date(),
+      notes: notes || 'Operator resolved incident & cleared member alarms'
+    });
+
     // Also mark constituent alarms as CLEARED or ACKNOWLEDGED
     await AlarmRepository.model.updateMany(
       { _id: { $in: event.alarmIds } },
@@ -136,6 +159,58 @@ class EventService {
       }
     } catch (alarmBroadcastErr) {
       console.warn('⚠️ Non-fatal error broadcasting updated alarms on event resolve:', alarmBroadcastErr.message);
+    }
+
+    return savedEvent;
+  }
+
+  async reopenEvent(id, userId, notes = '') {
+    const event = await EventRepository.findById(id);
+    if (!event) {
+      const error = new Error(`Correlated event with ID [${id}] not found`);
+      error.statusCode = 404;
+      error.code = 'NOT_FOUND';
+      throw error;
+    }
+
+    if (event.status === 'OPEN') {
+      const error = new Error('Cannot reopen an event that is already OPEN');
+      error.statusCode = 400;
+      error.code = 'INVALID_STATUS_TRANSITION';
+      throw error;
+    }
+
+    event.status = 'OPEN';
+    if (notes) {
+      event.notes = notes;
+    }
+
+    if (!Array.isArray(event.statusHistory)) {
+      event.statusHistory = [];
+    }
+    event.statusHistory.push({
+      status: 'OPEN',
+      changedBy: userId,
+      changedAt: new Date(),
+      notes: notes || 'Operator reopened incident for reinvestigation'
+    });
+
+    // Reopen constituent alarms back to ACTIVE
+    await AlarmRepository.model.updateMany(
+      { _id: { $in: event.alarmIds } },
+      { $set: { status: 'ACTIVE' } }
+    );
+
+    const savedEvent = await event.save();
+    broadcastIncidentUpdated(savedEvent);
+
+    try {
+      const updatedAlarms = await AlarmRepository.findAll({ _id: { $in: event.alarmIds } });
+      for (const alarm of updatedAlarms) {
+        broadcastAlarmUpdated(alarm);
+      }
+    } catch (alarmBroadcastErr) {
+      console.warn('⚠️ Non-fatal error broadcasting updated alarms on event reopen:', alarmBroadcastErr.message);
     }
 
     return savedEvent;
@@ -195,7 +270,8 @@ class EventService {
       activeAlarms: alarmStats.activeAlarms,
       alarmSeverityCounts: alarmStats.severityCounts,
       noiseReductionRatio: `${totalAlarms}:${eventStats.totalEvents}`,
-      noiseReductionPercent: Math.max(0, noiseReductionPercent)
+      noiseReductionPercent: Math.max(0, noiseReductionPercent),
+      noiseReductionRate: Math.max(0, noiseReductionPercent)
     };
   }
 }

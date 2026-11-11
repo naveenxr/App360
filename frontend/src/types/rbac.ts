@@ -18,6 +18,15 @@ export interface RolePermissions {
   [module: string]: ActionPermissions | undefined;
 }
 
+export interface AssignedUserMeta {
+  id: string;
+  name: string;
+  email: string;
+  isActive: boolean;
+  roleId?: string | null;
+  createdAt?: string;
+}
+
 export interface Role {
   id: string;
   _id?: string;
@@ -26,6 +35,7 @@ export interface Role {
   permissions: RolePermissions;
   isSystemRole?: boolean;
   assignedUserCount?: number;
+  assignedUsers?: AssignedUserMeta[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -71,5 +81,6 @@ export interface PermissionsMatrixData {
   modules: string[];
   actions: ('create' | 'read' | 'update' | 'delete')[];
   roles: Role[];
+  users?: AssignedUserMeta[];
 }
 

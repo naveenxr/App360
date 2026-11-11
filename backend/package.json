@@ -13,7 +13,8 @@
     "test:phase6": "node tests/phase6.test.js",
     "test:phase7_1": "node tests/phase7_1.test.js",
     "test:phase7_2": "node tests/phase7_2.test.js",
-    "test:all": "node tests/phase2.test.js && node tests/phase3.test.js && node tests/phase4.test.js && node tests/phase5.test.js && node tests/phase6.test.js && node tests/phase7_1.test.js && node tests/phase7_2.test.js",
+    "test:master": "node tests/master_suite.test.js",
+    "test:all": "node tests/phase2.test.js && node tests/phase3.test.js && node tests/phase4.test.js && node tests/phase5.test.js && node tests/phase6.test.js && node tests/phase7_1.test.js && node tests/phase7_2.test.js && node tests/master_suite.test.js",
     "test": "npm run test:all"
   },
   "dependencies": {

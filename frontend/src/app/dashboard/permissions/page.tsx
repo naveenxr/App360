@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import roleService from '../../../services/roleService';
-import { Role, RolePermissions, ActionPermissions } from '../../../types/rbac';
+import { Role, RolePermissions, ActionPermissions, AssignedUserMeta } from '../../../types/rbac';
 import { useAuth } from '../../../context/AuthContext';
 import Modal from '../../../components/common/Modal';
 import {
@@ -14,7 +14,9 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
-  HelpCircle
+  HelpCircle,
+  Users,
+  User
 } from 'lucide-react';
 
 const MODULES_SPEC: { id: string; label: string; desc: string }[] = [
@@ -41,7 +43,10 @@ export default function PermissionMatrixPage() {
   const isAdministrator = currentUserRole === 'ADMIN';
 
   const [roles, setRoles] = useState<Role[]>([]);
+  const [allUsers, setAllUsers] = useState<AssignedUserMeta[]>([]);
   const [selectedRoleId, setSelectedRoleId] = useState<string>('');
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [viewMode, setViewMode] = useState<'ROLE' | 'OPERATOR'>('ROLE');
   const [permissions, setPermissions] = useState<RolePermissions>({});
 
   const [isLoading, setIsLoading] = useState(true);
@@ -56,12 +61,17 @@ export default function PermissionMatrixPage() {
     try {
       const data = await roleService.getPermissionsMatrix();
       setRoles(data.roles);
+      setAllUsers(data.users || []);
 
       if (data.roles.length > 0) {
         const defaultRole =
           data.roles.find((r) => (r.id || r._id) === selectedRoleId) || data.roles[0];
         const currentId = defaultRole.id || defaultRole._id || '';
         setSelectedRoleId(currentId);
+
+        if (data.users && data.users.length > 0 && !selectedUserId) {
+          setSelectedUserId(data.users[0].id);
+        }
 
         const perms: RolePermissions = {};
         MODULES_SPEC.forEach((m) => {
@@ -81,7 +91,7 @@ export default function PermissionMatrixPage() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [selectedRoleId]);
+  }, [selectedRoleId, selectedUserId]);
 
   useEffect(() => {
     fetchMatrix();
@@ -104,6 +114,30 @@ export default function PermissionMatrixPage() {
         };
       });
       setPermissions(perms);
+    }
+  };
+
+  const handleUserSelect = (userId: string) => {
+    setSelectedUserId(userId);
+    setError(null);
+    setSuccessMsg(null);
+
+    const targetUser = allUsers.find((u) => u.id === userId);
+    if (targetUser && targetUser.roleId) {
+      const targetRole = roles.find((r) => (r.id || r._id) === targetUser.roleId);
+      if (targetRole) {
+        setSelectedRoleId(targetRole.id || targetRole._id || '');
+        const perms: RolePermissions = {};
+        MODULES_SPEC.forEach((m) => {
+          perms[m.id] = {
+            read: Boolean(targetRole.permissions?.[m.id]?.read),
+            create: Boolean(targetRole.permissions?.[m.id]?.create),
+            update: Boolean(targetRole.permissions?.[m.id]?.update),
+            delete: Boolean(targetRole.permissions?.[m.id]?.delete)
+          };
+        });
+        setPermissions(perms);
+      }
     }
   };
 
@@ -189,6 +223,53 @@ export default function PermissionMatrixPage() {
         </div>
       </div>
 
+      {/* Target View Switcher (Role vs Operator) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+        <div className="flex items-center gap-2">
+          <span className="text-slate-400 font-medium">Matrix View Target:</span>
+          <div className="inline-flex rounded-lg bg-slate-950 p-1 border border-slate-800">
+            <button
+              onClick={() => setViewMode('ROLE')}
+              className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
+                viewMode === 'ROLE'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              By Role ({roles.length})
+            </button>
+            <button
+              onClick={() => setViewMode('OPERATOR')}
+              className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
+                viewMode === 'OPERATOR'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              By Operator ({allUsers.length})
+            </button>
+          </div>
+        </div>
+
+        {viewMode === 'OPERATOR' && allUsers.length > 0 && (
+          <div className="flex items-center gap-2">
+            <User className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="text-slate-400">Select Operator:</span>
+            <select
+              value={selectedUserId}
+              onChange={(e) => handleUserSelect(e.target.value)}
+              className="px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-100 font-medium focus:outline-none focus:border-indigo-500"
+            >
+              {allUsers.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name} ({u.email})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
       {/* Role Switcher Tabs */}
       <div className="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900 border border-slate-800 overflow-x-auto text-xs">
         {roles.map((r) => {
@@ -208,9 +289,45 @@ export default function PermissionMatrixPage() {
             >
               <span>{r.name}</span>
               {isSys && <Lock className="w-3 h-3 text-amber-400 opacity-80" />}
+              {r.assignedUsers && r.assignedUsers.length > 0 && (
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  {r.assignedUsers.length}
+                </span>
+              )}
             </button>
           );
         })}
+      </div>
+
+      {/* Assigned Operators Roster for Selected Role */}
+      <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2">
+          <Users className="w-4 h-4 text-indigo-400 shrink-0" />
+          <span className="text-slate-300 font-medium">
+            Operators Assigned to <span className="text-indigo-400 font-bold">{selectedRole?.name}</span> (
+            {selectedRole?.assignedUsers?.length || 0}):
+          </span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {selectedRole?.assignedUsers && selectedRole.assignedUsers.length > 0 ? (
+            selectedRole.assignedUsers.map((u) => (
+              <span
+                key={u.id}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs"
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${u.isActive ? 'bg-emerald-400' : 'bg-red-400'}`} />
+                <span className="font-semibold text-slate-100">{u.name}</span>
+                <span className="text-[10px] text-slate-500 font-mono">({u.email})</span>
+              </span>
+            ))
+          ) : (
+            <span className="text-slate-500 italic">No operators currently assigned to this role</span>
+          )}
+        </div>
       </div>
 
       {/* Notifications */}

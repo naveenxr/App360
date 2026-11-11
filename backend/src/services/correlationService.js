@@ -313,8 +313,17 @@ class CorrelationService {
       processedCount: unlinkedAlarms.length,
       createdCount,
       updatedCount,
-      mergedCount
+      mergedCount,
+      eventsCreated: createdCount,
+      eventsUpdated: updatedCount
     };
+  }
+
+  /**
+   * Alias for processUnlinkedAlarms for correlation test suites
+   */
+  async runCorrelation() {
+    return await this.processUnlinkedAlarms();
   }
 }
 

@@ -68,6 +68,17 @@ class EventController {
       next(error);
     }
   }
+
+  async reopenEvent(req, res, next) {
+    try {
+      const { notes } = req.body || {};
+      const userId = req.user ? req.user._id : null;
+      const event = await EventService.reopenEvent(req.params.id, userId, notes);
+      return sendSuccess(res, event, 'Correlated event reopened successfully', 200);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new EventController();

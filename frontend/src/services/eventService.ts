@@ -1,5 +1,5 @@
 import apiClient from './api';
-import { CorrelatedEvent, EventFilters, CorrelationStats } from '../types/event';
+import { CorrelatedEvent, EventFilters, CorrelationStats, StatusHistoryEntry } from '../types/event';
 import { Alarm } from '../types/alarm';
 
 export interface EventsListApiResponse {
@@ -19,10 +19,13 @@ export interface RelatedAlarmsResponse {
   deviceId: string;
   severity: string;
   status: string;
+  correlationRule?: string;
   firstOccurredAt: string;
   lastOccurredAt: string;
   alarmCount: number;
   alarms: Alarm[];
+  notes?: string;
+  statusHistory?: StatusHistoryEntry[];
 }
 
 export const eventService = {
@@ -66,6 +69,14 @@ export const eventService = {
   async resolveEvent(id: string, notes?: string): Promise<CorrelatedEvent> {
     const response = await apiClient.post<{ success: boolean; data: CorrelatedEvent }>(
       `/events/${id}/resolve`,
+      { notes: notes || '' }
+    );
+    return response.data.data;
+  },
+
+  async reopenEvent(id: string, notes?: string): Promise<CorrelatedEvent> {
+    const response = await apiClient.post<{ success: boolean; data: CorrelatedEvent }>(
+      `/events/${id}/reopen`,
       { notes: notes || '' }
     );
     return response.data.data;

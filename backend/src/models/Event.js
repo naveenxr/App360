@@ -76,7 +76,29 @@ const eventSchema = new mongoose.Schema(
     resolvedAt: {
       type: Date,
       default: null
-    }
+    },
+    statusHistory: [
+      {
+        status: {
+          type: String,
+          enum: ['OPEN', 'ACKNOWLEDGED', 'RESOLVED'],
+          required: true
+        },
+        changedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+          default: null
+        },
+        changedAt: {
+          type: Date,
+          default: Date.now
+        },
+        notes: {
+          type: String,
+          default: ''
+        }
+      }
+    ]
   },
   {
     timestamps: true,

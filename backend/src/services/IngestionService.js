@@ -212,6 +212,57 @@ class IngestionService {
   async listIngestionLogs(options = {}) {
     return await IngestionLogRepository.listLogs(options);
   }
+
+  /**
+   * Processes a single canonical alarm item directly:
+   * Saves raw wire payload, upserts alarm, triggers correlation and broadcasts via Socket.IO.
+   * 
+   * @param {Object} canonicalData 
+   * @param {string} [batchId] 
+   * @returns {Promise<{ alarm: Object, isNew: boolean, isDuplicate: boolean, correlationResult: Object }>}
+   */
+  async processAlarmItem(canonicalData, batchId = null) {
+    const rawPayload = canonicalData.rawPayload || { mock: true };
+    const checksum = AlarmNormalizer.calculateChecksum(rawPayload);
+    const rawDoc = await RawAlarmPayloadRepository.create({
+      sourceId: canonicalData.sourceId,
+      externalAlarmId: canonicalData.externalAlarmId,
+      ingestionBatchId: batchId || `DIRECT-${Date.now()}`,
+      rawPayload,
+      checksum,
+      ingestedAt: new Date()
+    });
+
+    const { alarm, isNew } = await AlarmRepository.upsertAlarm(canonicalData, rawDoc._id);
+
+    let correlationResult = { action: 'NONE' };
+    if (isNew) {
+      try {
+        correlationResult = await correlationService.correlateAlarm(alarm);
+        if (correlationResult?.event?._id) {
+          alarm.correlatedEventId = correlationResult.event._id;
+        }
+      } catch (corrErr) {
+        console.error(`⚠️ Correlation error for alarm [${alarm.externalAlarmId}]:`, corrErr.message);
+      }
+      broadcastAlarmNew(alarm);
+    } else {
+      if (!alarm.correlatedEventId) {
+        try {
+          correlationResult = await correlationService.correlateAlarm(alarm);
+        } catch (corrErr) {
+          console.error(`⚠️ Correlation error for unlinked alarm [${alarm.externalAlarmId}]:`, corrErr.message);
+        }
+      }
+    }
+
+    return {
+      alarm,
+      isNew,
+      isDuplicate: !isNew,
+      correlationResult
+    };
+  }
 }
 
 module.exports = new IngestionService();
