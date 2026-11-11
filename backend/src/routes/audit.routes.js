@@ -13,3 +13,4 @@ router.use(requirePermission('audit', 'read'));
 router.get('/', (req, res, next) => AuditLogController.getAuditLogs(req, res, next));
 
 module.exports = router;
+

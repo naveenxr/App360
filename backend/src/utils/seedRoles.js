@@ -82,48 +82,25 @@ const seedRoles = async () => {
       results.created.push(created.name);
       console.log(`✅ Seeded default role: [${created.name}]`);
     } else {
-      // Ensure system roles have the correct full module permissions
+      // Ensure any newly added module permissions exist on the role
       let modified = false;
-      const currentPerms = existingRole.toObject ? existingRole.toObject().permissions || {} : existingRole.permissions || {};
+      const currentPerms = existingRole.permissions || {};
 
       for (const mod of MODULE_LIST) {
-        const expectedModPerms = roleDef.permissions[mod] || {
-          read: false,
-          create: false,
-          update: false,
-          delete: false
-        };
-
-        if (existingRole.name === 'ADMIN') {
-          // ADMIN role must always retain full rights on all modules
-          if (
-            !currentPerms[mod] ||
-            !currentPerms[mod].read ||
-            !currentPerms[mod].create ||
-            !currentPerms[mod].update ||
-            !currentPerms[mod].delete
-          ) {
-            currentPerms[mod] = { read: true, create: true, update: true, delete: true };
-            modified = true;
-          }
-        } else if (!currentPerms[mod] || (
-          currentPerms[mod].read === false &&
-          currentPerms[mod].create === false &&
-          currentPerms[mod].update === false &&
-          currentPerms[mod].delete === false &&
-          expectedModPerms.read === true
-        )) {
-          // If the module was just populated with schema defaults (all false) but default role has permissions
-          currentPerms[mod] = { ...expectedModPerms };
+        if (!currentPerms[mod]) {
+          currentPerms[mod] = roleDef.permissions[mod] || {
+            read: false,
+            create: false,
+            update: false,
+            delete: false
+          };
           modified = true;
         }
       }
 
       if (modified) {
         existingRole.permissions = currentPerms;
-        existingRole.markModified('permissions');
         await existingRole.save();
-        console.log(`🔄 Upgraded permissions for system role: [${existingRole.name}]`);
       }
 
       results.existing.push(existingRole.name);

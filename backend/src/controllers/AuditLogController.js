@@ -30,3 +30,4 @@ class AuditLogController {
 }
 
 module.exports = new AuditLogController();
+

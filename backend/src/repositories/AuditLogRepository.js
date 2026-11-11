@@ -34,3 +34,4 @@ class AuditLogRepository extends BaseRepository {
 }
 
 module.exports = new AuditLogRepository();
+

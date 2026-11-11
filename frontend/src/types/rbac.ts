@@ -72,3 +72,4 @@ export interface PermissionsMatrixData {
   actions: ('create' | 'read' | 'update' | 'delete')[];
   roles: Role[];
 }
+

@@ -89,3 +89,4 @@ auditLogSchema.index({ action: 1, timestamp: -1 });
 const AuditLog = mongoose.models.AuditLog || mongoose.model('AuditLog', auditLogSchema);
 
 module.exports = AuditLog;
+

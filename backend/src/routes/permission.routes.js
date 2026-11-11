@@ -20,3 +20,4 @@ router.put('/:id', requireAdmin, validate(updatePermissionsSchema), (req, res, n
 );
 
 module.exports = router;
+
