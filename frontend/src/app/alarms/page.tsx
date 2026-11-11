@@ -67,6 +67,26 @@ export default function AlarmsPage() {
   }, [page, limit, severity, status, sourceId, siteSearch, deviceSearch]);
 
   useEffect(() => {
+    const syncFromUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlSite = params.get('siteId') || '';
+      const urlDevice = params.get('deviceId') || '';
+      if (urlSite || urlDevice) {
+        setSiteSearch(urlSite);
+        setDeviceSearch(urlDevice);
+        setPage(1);
+      }
+    };
+    syncFromUrl();
+    window.addEventListener('app360:search-navigate', syncFromUrl);
+    window.addEventListener('popstate', syncFromUrl);
+    return () => {
+      window.removeEventListener('app360:search-navigate', syncFromUrl);
+      window.removeEventListener('popstate', syncFromUrl);
+    };
+  }, []);
+
+  useEffect(() => {
     fetchAlarms();
   }, [fetchAlarms]);
 

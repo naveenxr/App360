@@ -5,12 +5,12 @@ import { usePathname } from 'next/navigation';
 import { 
   LogOut, 
   Loader2, 
-  Search, 
   Bell, 
   ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
+import GlobalSearch from './GlobalSearch';
 
 export const Header: React.FC = () => {
   const pathname = usePathname();
@@ -50,17 +50,7 @@ export const Header: React.FC = () => {
       </div>
 
       {/* Center: Global Search Bar */}
-      <div className="hidden lg:flex items-center flex-1 max-w-md mx-8">
-        <div className="relative w-full">
-          <Search className="w-4 h-4 text-[#94A3B8] absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            readOnly
-            placeholder="Search alarms, telemetry, sites or devices... (Ctrl + K)"
-            className="w-full pl-9 pr-4 py-1.5 rounded-lg bg-[#F7F9FC] border border-[#E5EAF1] text-xs text-[#172B4D] placeholder-[#94A3B8] focus:outline-none focus:border-[#2563EB] focus:bg-white transition-all cursor-default"
-          />
-        </div>
-      </div>
+      <GlobalSearch />
 
       {/* Right: Engine Status, Profile & Sign Out */}
       <div className="flex items-center gap-3 sm:gap-4">

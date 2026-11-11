@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import MapFilterBar from '../../components/map/MapFilterBar';
 import topologyService from '../../services/topologyService';
@@ -85,9 +85,57 @@ export default function MapPage() {
     }
   }, [region, severity]);
 
+  const lastSyncedDeviceRef = useRef<string | null>(null);
+
+  const handleInspectNode = useCallback(async (deviceId: string) => {
+    setIsLoadingNode(true);
+    setNodeError(null);
+    setInspectedNode(null);
+
+    try {
+      const liveData = await topologyService.getNodeLiveAlarms(deviceId);
+      setInspectedNode(liveData);
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        `Failed to fetch live telemetry for node [${deviceId}]`;
+      setNodeError(msg);
+    } finally {
+      setIsLoadingNode(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchTopologyData();
   }, [fetchTopologyData]);
+
+  useEffect(() => {
+    const syncFromUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlSite = params.get('siteId');
+      const urlDevice = params.get('deviceId');
+      if (urlSite) {
+        setSearch(urlSite);
+        const matched = sites.find((s) => s.siteId.toUpperCase() === urlSite.toUpperCase());
+        if (matched) setSelectedSite(matched);
+      }
+      if (urlDevice && lastSyncedDeviceRef.current !== urlDevice) {
+        lastSyncedDeviceRef.current = urlDevice;
+        handleInspectNode(urlDevice);
+      }
+    };
+    syncFromUrl();
+    const handleCustomNavigate = () => {
+      lastSyncedDeviceRef.current = null;
+      syncFromUrl();
+    };
+    window.addEventListener('app360:search-navigate', handleCustomNavigate);
+    window.addEventListener('popstate', handleCustomNavigate);
+    return () => {
+      window.removeEventListener('app360:search-navigate', handleCustomNavigate);
+      window.removeEventListener('popstate', handleCustomNavigate);
+    };
+  }, [sites, handleInspectNode]);
 
   // Real-time Dynamic Topology Updates
   useEffect(() => {
@@ -164,24 +212,6 @@ export default function MapPage() {
       unsubscribe(ROOMS.MONITORING_EVENTS);
     };
   }, [socket, subscribe, unsubscribe, fetchTopologyData]);
-
-  const handleInspectNode = async (deviceId: string) => {
-    setIsLoadingNode(true);
-    setNodeError(null);
-    setInspectedNode(null);
-
-    try {
-      const liveData = await topologyService.getNodeLiveAlarms(deviceId);
-      setInspectedNode(liveData);
-    } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        `Failed to fetch live telemetry for node [${deviceId}]`;
-      setNodeError(msg);
-    } finally {
-      setIsLoadingNode(false);
-    }
-  };
 
   const handleViewRaw = async (alarm: Alarm) => {
     setRawTitle(`Raw Wire Telemetry: ${alarm.externalAlarmId} (${alarm.sourceId})`);
