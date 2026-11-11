@@ -220,9 +220,15 @@ export default function LoginPage() {
       await login(email, password);
       router.replace('/dashboard');
     } catch (err: unknown) {
-      const errorMsg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Authentication failed. Please verify your credentials.';
+      const axiosErr = err as {
+        response?: { data?: { message?: string; error?: { message?: string } } };
+        message?: string;
+      };
+      const errorMsg = !axiosErr?.response
+        ? 'Unable to reach the authentication server (network or CORS error).'
+        : axiosErr.response.data?.error?.message ||
+          axiosErr.response.data?.message ||
+          'Authentication failed. Please verify your credentials.';
       setError(errorMsg);
     } finally {
       setIsSubmitting(false);
