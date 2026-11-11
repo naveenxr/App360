@@ -3,6 +3,7 @@ const config = require('./config/env');
 const { connectDatabase, disconnectDatabase } = require('./config/database');
 const { seedRoles } = require('./utils/seedRoles');
 const bootstrapAdmin = require('./utils/bootstrapAdmin');
+const { seedTopology } = require('./utils/seedTopology');
 const { startIngestionJob, stopIngestionJob } = require('./jobs/ingestion.job');
 
 let server;
@@ -18,10 +19,13 @@ const startServer = async () => {
     // 3. Bootstrap initial system administrator from environment variables
     await bootstrapAdmin();
 
-    // 4. Start periodic background ingestion scheduler
+    // 4. Seed network topology sites and devices
+    await seedTopology();
+
+    // 5. Start periodic background ingestion scheduler
     startIngestionJob();
 
-    // 5. Start HTTP listener
+    // 6. Start HTTP listener
     server = app.listen(config.PORT, () => {
       console.log(`=======================================================`);
       console.log(`🚀 App360 Backend running in [${config.NODE_ENV}] mode`);
