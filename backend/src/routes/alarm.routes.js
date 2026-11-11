@@ -19,3 +19,4 @@ router.get('/:id', (req, res, next) => AlarmController.getAlarmById(req, res, ne
 router.get('/:id/raw', (req, res, next) => AlarmController.getAlarmRawPayload(req, res, next));
 
 module.exports = router;
+

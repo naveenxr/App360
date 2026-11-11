@@ -1,204 +1,192 @@
 # App360 AIOps Alarm Correlation Engine Specification
 
-> **Document Version:** 1.0.0  
-> **Module:** Correlation Engine (`server/src/modules/correlation`)  
+> **Document Version:** 2.0.0  
+> **Module:** Correlation Engine (`backend/src/services/correlationService.js`)  
+> **Architecture Layer:** Business Logic Layer  
 > **Concept:** AIOps Temporal & Topological Heuristic Event Aggregation  
 
 ---
 
 ## 1. Executive Summary & Correlation Philosophy
 
-In high-density telecommunication and distributed IP networks, a single primary failure (e.g., an optical fiber severance, power grid failure, or core router restart) instantaneously triggers hundreds of downstream, secondary alarms across switches, wireless base stations, and edge devices. This phenomenon is known as an **Alarm Storm**.
+In modern telecommunication networks, distributed IP backbones, and enterprise cloud data centers, a single root fault (such as a core link failure, power disruption, or BGP flap) cascades rapidly, triggering dozens or hundreds of downstream symptomatic alarms across switches, routers, firewalls, and edge nodes within seconds. This alert storm overwhelms Network Operations Center (NOC) engineers.
 
-Without intelligent correlation, Network Operations Center (NOC) engineers are overwhelmed by redundant alerts, leading to delayed **Mean Time to Resolution (MTTR)** and misdirected field dispatch.
-
-**App360** implements a **rule-based, AIOps-aligned correlation engine** designed to:
-1. **Deduplicate redundant alerts** generated repeatedly by flapping interfaces or persistent telemetry polls.
-2. **Cluster spatially related alarms** occurring at the same geographical site or originating from the same physical device.
-3. **Group temporally proximate alarms** arriving within a sliding 5-minute ($\Delta t \le 300\text{s}$) failure window.
-4. **Elongate active event boundaries dynamically** when overlapping cascading failures arrive before window expiration.
-5. **Synthesize a unified Correlated Incident** with an automated root cause hypothesis, escalating the incident's overall severity to the highest observed severity among its constituent alarms.
-6. **Preserve full traceability** enabling instant one-click drill-down from the correlated incident to the exact raw wire payloads.
+**App360** implements a carrier-grade, rule-based **AIOps Alarm Correlation Engine** designed to:
+1. **Eliminate Redundant Alerts:** Suppress duplicate incoming alerts via cryptographic fingerprinting and compound index tracking.
+2. **Topological Coalescence:** Isolate alarms strictly by physical site (`siteId`) and physical device (`deviceId`).
+3. **Strict 5-Minute Time-Window Boundary:** Enforce a strict non-rolling $\le 5\text{-minute}$ ($300,000\text{ ms}$) boundary between the earliest and latest constituent alarms:
+   $$\max(\text{lastOccurredAt}, T_{\text{alarm}}) - \min(\text{firstOccurredAt}, T_{\text{alarm}}) \le 300,000\text{ ms}$$
+4. **Overlapping Event Merging:** Automatically merge multiple active candidate events into a single unified event when their combined time span satisfies the 5-minute rule ($\le 300,000\text{ ms}$).
+5. **Selective Minimal Expansion:** When multiple candidate events match but their combined span exceeds 5 minutes, prevent invalid merging and assign the alarm to the candidate with the minimal temporal expansion.
+6. **Dynamic Severity Escalation:** Dynamically escalate the event severity to the highest severity among all active constituent alarms (`CRITICAL` > `MAJOR` > `MINOR` > `WARNING` > `INFO`).
+7. **Lossless Forensic Drill-Down:** Retain full referential integrity from Correlated Events $\rightarrow$ Constituent Alarms $\rightarrow$ Raw Wire JSON Payloads (`raw_alarm_payloads`).
 
 ---
 
-## 2. Correlation Dimensions & Core Rules
+## 2. Correlation Engine Architecture & Flow
 
 ```mermaid
 flowchart TD
-    ALM_IN["Incoming Normalized Alarm<br/>(siteId, deviceId, occurredAt, severity, fingerprint)"] --> STEP_DEDUP{"1. Duplicate Check<br/>Does active alarm with identical fingerprint exist within 5 min?"}
+    INCOMING["Incoming Normalized Alarm<br/>(siteId, deviceId, timestamp, severity)"] --> DEDUP_CHECK{"Duplicate Check<br/>Does any active event already<br/>contain this alarmId?"}
     
-    STEP_DEDUP -- "YES (Duplicate)" --> ACT_DEDUP["Increment repeatCount ++<br/>Update lastSeenTimestamp<br/>Preserve raw payload audit<br/>Halt further processing"]
+    DEDUP_CHECK -- "YES" --> RET_DUP["Return Action: DUPLICATE<br/>Preserve existing event state"]
     
-    STEP_DEDUP -- "NO (New Unique Alarm)" --> STEP_PERSIST["Persist Alarm Document in MongoDB"]
+    DEDUP_CHECK -- "NO" --> CANDIDATE_QUERY["Query Active Candidate Events<br/>Matching: siteId & deviceId<br/>Status IN ['OPEN', 'ACKNOWLEDGED']"]
     
-    STEP_PERSIST --> STEP_QUERY["2. Spatial & Temporal Window Search<br/>Query active CorrelatedEvents where:<br/>• siteId == alarm.siteId<br/>• status IN ['OPEN', 'INVESTIGATING']<br/>• windowEndTime >= alarm.occurredAt - 5m"]
+    CANDIDATE_QUERY --> FILTER_ELIGIBLE{"Evaluate 5-Minute Window<br/>max(last, time) - min(first, time) <= 300,000ms"}
     
-    STEP_QUERY --> STEP_MATCH{"3. Matching Event Found?"}
+    FILTER_ELIGIBLE -- "0 Eligible Candidates" --> CREATE_EVENT["Action: CREATED<br/>• Generate unique eventId<br/>• firstOccurredAt = alarm.time<br/>• lastOccurredAt = alarm.time<br/>• severity = alarm.severity<br/>• status = OPEN"]
     
-    STEP_MATCH -- "YES (Belongs to Existing Window)" --> STEP_UPDATE["4. Update Existing Correlated Event:<br/>• Append alarm._id to alarmIds array<br/>• Add alarm.deviceId to involvedDeviceIds<br/>• Recalculate event.severity = MAX(severity)<br/>• Extend windowEndTime = MAX(windowEndTime, occurredAt + 5m)<br/>• Re-evaluate Root Cause Heuristic<br/>• Link alarm.correlatedEventId = event._id"]
+    FILTER_ELIGIBLE -- "1 Eligible Candidate" --> UPDATE_EVENT["Action: UPDATED<br/>• Add alarmId to alarmIds array<br/>• Update firstOccurredAt & lastOccurredAt<br/>• Recalculate max(severity)<br/>• Link alarm.correlatedEventId"]
     
-    STEP_MATCH -- "NO (Window Expired or New Outage)" --> STEP_CREATE["5. Create New Correlated Event:<br/>• Generate eventNumber (EVT-YYYYMMDD-XXXX)<br/>• windowStartTime = alarm.occurredAt<br/>• windowEndTime = alarm.occurredAt + 5m<br/>• primaryDeviceId = alarm.deviceId<br/>• severity = alarm.severity<br/>• Evaluate Initial Root Cause Heuristic<br/>• Link alarm.correlatedEventId = event._id"]
+    FILTER_ELIGIBLE -- "> 1 Eligible Candidates" --> EVAL_MERGE{"Evaluate Combined Span<br/>max(allLast, time) - min(allFirst, time) <= 300,000ms"}
     
-    STEP_UPDATE --> STEP_TOPOLOGY["6. Dynamic Topology Rollup:<br/>Recalculate site and device currentSeverity on map"]
-    STEP_CREATE --> STEP_TOPOLOGY
+    EVAL_MERGE -- "YES (<= 300,000ms)" --> MERGE_EVENTS["Action: MERGED<br/>• Keep earliest primary event<br/>• Combine all unique alarmIds<br/>• Set combined time boundaries<br/>• Recalculate aggregate severity<br/>• Delete redundant candidate events"]
+    
+    EVAL_MERGE -- "NO (> 300,000ms)" --> SELECT_BEST["Action: UPDATED<br/>• Prevent merging (violates 5m cap)<br/>• Select candidate with minimal expansion<br/>• Update selected candidate event"]
 ```
 
 ---
 
-## 3. Explicit Rule Specifications
+## 3. Mandatory Correlation Rule Specifications
 
-### 3.1. Same Site Matching
-- **Definition:** Telecommunications equipment housed within the same physical shelter, cell tower, or data center share environmental and power infrastructure.
-- **Rule:** If an incoming normalized alarm shares the exact `siteId` (case-insensitive string) with an active correlated incident whose sliding temporal window has not lapsed, the alarm is grouped into that existing incident.
+### 3.1. Same Site Isolation
+- **Rule:** Alarms must match `siteId` (case-insensitive string comparison).
+- **Behavior:** An alarm for device `RTR001` at site `TRY001` will **never** correlate into an active event for `RTR001` at site `CHN001`. Different sites represent distinct geographical facilities and must be isolated.
 
-### 3.2. Same Device Matching
-- **Definition:** Multiple distinct alarms frequently emanate from a single device (e.g., `HIGH_CPU`, `TEMPERATURE_WARNING`, `FAN_FAILURE`, and `BGP_PEER_DOWN` all firing on `RTR-MUM-CORE-01`).
-- **Rule:** When an alarm arrives for a device that already has active alarms inside the site event, the device is designated as a high-probability **Primary Fault Device**, and the new alarm is appended as a symptom of that device's failure state.
+### 3.2. Same Device Isolation
+- **Rule:** Alarms must match `deviceId` (case-insensitive string comparison).
+- **Behavior:** An alarm for device `RTR002` at site `CHN001` will **never** correlate into an active event for device `RTR001` at site `CHN001`. Equipment instances are distinct operational entities.
 
-### 3.3. Five-Minute Sliding Time Window ($\Delta t = 300\text{ seconds}$)
-- **Mathematical Definition:**  
-  Let the initial alarm arrive at timestamp $T_1$.  
-  The correlated incident establishes:
-  $$\text{windowStartTime} = T_1$$
-  $$\text{windowEndTime} = T_1 + 300\text{ seconds}$$
-- **Sliding Behavior:**  
-  Unlike rigid fixed-time bins (e.g., rigid hourly or 5-minute blocks that arbitrarily cut cascading failures in half), App360 implements a **sliding window**.  
-  If a second alarm arrives at $T_2$ such that:
-  $$T_1 \le T_2 \le \text{windowEndTime}$$
-  The alarm falls squarely inside the window.
+### 3.3. Strict 5-Minute Non-Rolling Window ($\Delta t \le 300,000\text{ ms}$)
+- **Mathematical Formula:**
+  $$\text{Span} = \max(\text{event.lastOccurredAt}, T_{\text{alarm}}) - \min(\text{event.firstOccurredAt}, T_{\text{alarm}})$$
+- **Boundary Conditions:**
+  - $\text{Span} \le 300,000\text{ ms}$: The alarm joins the event (`UPDATED`).
+  - $\text{Span} = 300,000\text{ ms}$ (exactly 5 minutes): The alarm joins the event.
+  - $\text{Span} > 300,000\text{ ms}$ (e.g., $300,001\text{ ms}$): The alarm **cannot** join the event. A separate event is created.
+- **Prohibition of Rolling Window Elongation:** Unlike naive sliding windows that allow events to extend infinitely (e.g., 10:00 $\rightarrow$ 10:04 $\rightarrow$ 10:08 $\rightarrow$ 10:12 into a 12-minute single event), App360 strictly requires that the difference between the **absolute earliest alarm** and the **absolute latest alarm** in an event never exceeds 5 minutes ($300,000\text{ ms}$).
 
-### 3.4. Overlapping Time-Window Behavior (Window Elongation)
-- **Problem:** Cascading failures propagate across networks over multiple minutes. A power failure at $T = 0$ may cause an access switch to drop battery at $T = 4\text{m}$, which causes edge radio links to die at $T = 7\text{m}$. A rigid 5-minute window would split this single incident into two disconnected events.
-- **App360 Solution:**  
-  When an alarm arrives at $T_{\text{new}}$ within the active window ($T_{\text{new}} \le \text{windowEndTime}$), the window end boundary is dynamically elongated:
-  $$\text{windowEndTime} = \max(\text{windowEndTime}, T_{\text{new}} + 300\text{ seconds})$$
-- **Guardrail (Max Duration Cap):** To prevent an indefinite rolling window during persistent flapping, a hard cap of **2 hours** ($\text{maxWindowDuration} = 7200\text{s}$) is enforced. If $T_{\text{new}} - \text{windowStartTime} > 7200\text{s}$, the existing event is closed, and a new incident is created.
+### 3.4. Overlapping Candidate Merging vs. Selective Join
+When an incoming alarm bridges two or more active candidate events on the same site and device:
+1. **Full Merge Condition:**
+   $$\max(\{T_{\text{last}, i}\}, T_{\text{alarm}}) - \min(\{T_{\text{first}, i}\}, T_{\text{alarm}}) \le 300,000\text{ ms}$$
+   If the entire combined span is within 5 minutes:
+   - The candidate with the earliest `firstOccurredAt` is retained as the `primaryEvent`.
+   - All unique `alarmIds` from all candidate events and the new alarm are merged into `primaryEvent.alarmIds`.
+   - The secondary events are deleted from the database.
+   - The result is `{ action: 'MERGED', event: primaryEvent }`.
+2. **Prevented Merge (Selective Join):**
+   If the combined span exceeds 5 minutes ($> 300,000\text{ ms}$), merging all candidates would violate the 5-minute rule. Therefore:
+   - Merging is aborted.
+   - The candidate event whose time span expands the least ($\min(\Delta \text{span})$) is updated with the new alarm.
+   - The other candidate event remains independent.
 
-### 3.5. Duplicate Alarm Handling & Deduplication
-- **Definition:** Telemetry polling or chatty protocols often re-send identical alerts every 30 seconds while an issue persists.
-- **Deduplication Fingerprint Formula:**
-  $$\text{Fingerprint} = \text{SHA256}(\text{sourceId} \parallel \text{siteId} \parallel \text{deviceId} \parallel \text{alarmType} \parallel \text{severity})$$
-- **Deduplication Logic:**  
-  Before inserting a new alarm document, the engine queries for an existing alarm where:
-  - `fingerprint == currentFingerprint`
-  - `status == 'ACTIVE'`
-  - $\text{now} - \text{occurredAt} \le 300\text{ seconds}$
-- **Action on Match:**  
-  - The incoming raw payload is still immutably appended to `raw_alarm_payloads` for audit compliance.
-  - The existing alarm document increments its counter: `repeatCount = repeatCount + 1`.
-  - The alarm's `updatedAt` is refreshed to current time.
-  - No new alarm document is created, preventing database bloat and downstream event inflation.
+### 3.5. Duplicate Alarm Idempotency
+- If `event.alarmIds` already contains `alarm._id`, the engine recognizes the alarm as a duplicate:
+  - Returns `{ action: 'DUPLICATE', event }`.
+  - Does not mutate `alarmIds` or recalculate severity.
+  - Guarantees idempotent reprocessing during batch reconciliation or network retries.
 
-### 3.6. Existing Event Updates & Severity Escalation
-- **Severity Hierarchy:**
-  $$\text{CRITICAL} (4) > \text{MAJOR} (3) > \text{MINOR} (2) > \text{WARNING} (1) > \text{CLEAR} (0)$$
-- **Dynamic Escalation:**  
-  When a new alarm is appended to an existing event, the event's severity is updated to:
-  $$\text{event.severity} = \max(\text{event.severity}, \text{alarm.severity})$$
-  *Example:* If an existing event has severity `WARNING` due to high ambient temperature, and an incoming alarm reports `CRITICAL` power failure, the entire correlated incident escalates to `CRITICAL` immediately.
-- **Involved Devices Array:**  
-  The engine appends `alarm.deviceId` to `involvedDeviceIds` using a set union operation (`$addToSet` in MongoDB), ensuring an accurate inventory of affected hardware without duplicates.
+### 3.6. Dynamic Severity Hierarchy & Escalation
+- **Hierarchy Order:**
+  $$\text{CRITICAL (5)} > \text{MAJOR (4)} > \text{MINOR (3)} > \text{WARNING (2)} > \text{INFO (1)}$$
+- **Dynamic Recalculation:**
+  $$\text{event.severity} = \max_{a \in \text{alarmIds}}(\text{severity}(a))$$
+  When a higher-severity alarm arrives (e.g., `CRITICAL` arrives in an event that was previously `WARNING`), the event immediately escalates to `CRITICAL`.
+  When alarms are cleared or removed, `calculateAggregateSeverity` re-evaluates the highest active severity.
 
-### 3.7. Raw Alarm Drill-Down Architecture
-Every correlated incident maintains explicit two-way referential integrity with its constituent alarms and raw payloads:
-
-```mermaid
-flowchart LR
-    EVT["Correlated Event Document<br/>(EVT-20261111-0004)<br/>alarmIds: [ObjId1, ObjId2]"]
-    
-    subgraph Alarms["Constituent Alarms"]
-        ALM1["Alarm Document 1<br/>rawPayloadId: RawId1<br/>correlatedEventId: EvtId"]
-        ALM2["Alarm Document 2<br/>rawPayloadId: RawId2<br/>correlatedEventId: EvtId"]
-    end
-    
-    subgraph RawStore["Lossless Audit Vault"]
-        RAW1["Raw Wire Payload 1<br/>{ StationCode: '...', EpochTimestamp: ... }"]
-        RAW2["Raw Wire Payload 2<br/>{ alert_id: '...', timestamp_utc: ... }"]
-    end
-
-    EVT -->|References| ALM1
-    EVT -->|References| ALM2
-    ALM1 -->|Drill-down link| RAW1
-    ALM2 -->|Drill-down link| RAW2
-```
-
-In the Next.js UI:
-1. Engineer views the **Correlated Events Dashboard**.
-2. Clicks on an incident to expand the **Constituent Alarms Drawer**.
-3. Clicks on any individual alarm row to open the **Raw Payload Modal**, displaying the original formatted JSON wire message received from the external source.
+### 3.7. Out-of-Order Alarm Arrival Handling
+- Telemetry networks often transmit alarms via asynchronous paths with out-of-order latency.
+- If an alarm arrives with a timestamp earlier than `event.firstOccurredAt`:
+  $$\text{event.firstOccurredAt} = \min(\text{event.firstOccurredAt}, T_{\text{alarm}})$$
+- Similarly, if an alarm arrives with a timestamp later than `event.lastOccurredAt`:
+  $$\text{event.lastOccurredAt} = \max(\text{event.lastOccurredAt}, T_{\text{alarm}})$$
+- Both boundaries are accurately preserved regardless of ingestion order.
 
 ---
 
-## 4. Automated Root Cause Heuristic Engine
-
-The correlation engine applies deterministic causal heuristics based on network topology roles:
-
-```typescript
-function determineRootCause(
-  siteId: string, 
-  alarms: IAlarm[], 
-  involvedDevices: IDevice[]
-): { primaryDeviceId: string; heuristicReason: string } {
-  // Rule 1: Power & Facility Failure takes absolute precedence
-  const powerAlarm = alarms.find(a => 
-    a.alarmType.includes('POWER') || 
-    a.alarmType.includes('MAINS_FAIL') || 
-    a.alarmType.includes('GENERATOR')
-  );
-  if (powerAlarm) {
-    return {
-      primaryDeviceId: powerAlarm.deviceId,
-      heuristicReason: `Site-wide AC Mains/Power Failure at ${siteId}. All downstream device unreachability is collateral.`
-    };
-  }
-
-  // Rule 2: Upstream Core Router Outage
-  const coreRouterAlarm = alarms.find(a => {
-    const dev = involvedDevices.find(d => d.deviceId === a.deviceId);
-    return dev?.type === 'ROUTER' && (a.severity === 'CRITICAL' || a.alarmType.includes('LINK_DOWN') || a.alarmType.includes('BGP'));
-  });
-  if (coreRouterAlarm) {
-    return {
-      primaryDeviceId: coreRouterAlarm.deviceId,
-      heuristicReason: `Upstream Core Router (${coreRouterAlarm.deviceId}) link termination. Downstream switches and radio sectors isolated.`
-    };
-  }
-
-  // Rule 3: Environmental / HVAC Overheat
-  const tempAlarms = alarms.filter(a => a.alarmType.includes('TEMP') || a.alarmType.includes('THERMAL'));
-  if (tempAlarms.length >= 2) {
-    return {
-      primaryDeviceId: tempAlarms[0].deviceId,
-      heuristicReason: `Thermal Runaway / HVAC Failure at ${siteId} affecting multiple chassis.`
-    };
-  }
-
-  // Fallback Rule: Earliest Critical Alarm
-  const earliestCritical = [...alarms].sort((a, b) => a.occurredAt.getTime() - b.occurredAt.getTime())[0];
-  return {
-    primaryDeviceId: earliestCritical.deviceId,
-    heuristicReason: `Topological Cascade initiated by ${earliestCritical.alarmType} on ${earliestCritical.deviceId}.`
-  };
-}
-```
-
----
-
-## 5. Correlated Event Lifecycle State Machine
+## 4. Correlated Event Lifecycle State Machine
 
 ```mermaid
 stateDiagram-v2
-    [*] --> OPEN : Initial Alarm Correlated
-    OPEN --> OPEN : New Alarm Added (Window Elongated & Severity Escalated)
-    OPEN --> INVESTIGATING : Engineer Acknowledges / Assigns
-    INVESTIGATING --> RESOLVED : All Constituent Alarms Cleared
-    OPEN --> RESOLVED : Auto-Clear Alarm Received
-    RESOLVED --> CLOSED : Audit / Archive Cycle
-    CLOSED --> [*]
+    [*] --> OPEN : Initial Alarm Ingested & Correlated
+    OPEN --> OPEN : New Ingested Alarm Appended
+    OPEN --> ACKNOWLEDGED : Operator Acknowledges (POST /api/events/:id/acknowledge)
+    ACKNOWLEDGED --> RESOLVED : Operator Resolves (POST /api/events/:id/resolve)
+    RESOLVED --> [*]
 ```
 
-- **OPEN**: Active incident currently receiving or awaiting cascading alarms.
-- **INVESTIGATING**: Operator has taken ownership via the dashboard.
-- **RESOLVED**: Alarms have received `CLEAR` notifications or normal status restored.
-- **CLOSED**: Fully reconciled incident archived for historical reporting.
+### Lifecycle States:
+- **`OPEN`:** Default initial state. Actively aggregates new member alarms matching site, device, and temporal criteria.
+- **`ACKNOWLEDGED`:** Operator has taken ownership of the incident and provided operational notes. Still capable of receiving correlated alarms if within the 5-minute window.
+- **`RESOLVED`:** Incident has been remediated.
+  - **Cascading Alarm Sync:** When an event is resolved, all member alarms in `alarmIds` are automatically updated to `status: 'CLEARED'`.
+  - Resolved events are excluded from active correlation candidate queries. Any future alarms will initiate a new event.
+
+---
+
+## 5. Correlated Event Data Model (`events` collection)
+
+| Field Name | Type | Constraints / Default | Description |
+|---|---|---|---|
+| `eventId` | String | Unique, Indexed, Required | Human-readable ID (e.g., `EVT-1718000000000-A1B2C3`) |
+| `siteId` | String | Uppercase, Trim, Indexed | Target physical site identifier (e.g., `CHN001`) |
+| `deviceId` | String | Uppercase, Trim, Indexed | Target physical device identifier (e.g., `RTR001`) |
+| `alarmIds` | `[ObjectId]` | Ref: `Alarm`, Indexed | Array of constituent member alarm ObjectIDs |
+| `correlationRule` | String | Default: `'SAME_SITE_DEVICE_5MIN'` | Rule identifier governing the grouping |
+| `severity` | String | Enum: `['CRITICAL', 'MAJOR', 'MINOR', 'WARNING', 'INFO']` | Current highest severity among member alarms |
+| `status` | String | Enum: `['OPEN', 'ACKNOWLEDGED', 'RESOLVED']` | Current operational lifecycle status |
+| `firstOccurredAt` | Date | Required, Indexed | Earliest timestamp among all member alarms |
+| `lastOccurredAt` | Date | Required, Indexed | Latest timestamp among all member alarms |
+| `notes` | String | Default: `''` | Operator investigation and remediation notes |
+| `acknowledgedBy`| `ObjectId` | Ref: `User`, Default: `null` | Operator user who acknowledged the incident |
+| `acknowledgedAt`| Date | Default: `null` | Acknowledgment timestamp |
+| `resolvedBy` | `ObjectId` | Ref: `User`, Default: `null` | Operator user who resolved the incident |
+| `resolvedAt` | Date | Default: `null` | Resolution timestamp |
+
+---
+
+## 6. REST API Endpoints Specification
+
+All endpoints require JWT Bearer token authentication via `Authorization: Bearer <token>`.
+
+### 6.1. Correlated Events Endpoints (`/api/events`)
+
+| Method | Endpoint | Permission Required | Description |
+|---|---|---|---|
+| `GET` | `/api/events` | `alarm:read` | List correlated events with pagination, status, severity, site, and date filters |
+| `GET` | `/api/events/:id` | `alarm:read` | Retrieve specific correlated event details |
+| `GET` | `/api/events/:id/alarms` | `alarm:read` | Retrieve constituent alarms and populated raw wire payloads |
+| `POST` | `/api/events/:id/acknowledge` | `alarm:update` | Acknowledge event (`OPEN` $\rightarrow$ `ACKNOWLEDGED`) with notes |
+| `POST` | `/api/events/:id/resolve` | `alarm:update` | Resolve event (`ACKNOWLEDGED` $\rightarrow$ `RESOLVED`) and clear member alarms |
+
+### 6.2. Correlation Engine Endpoints (`/api/correlation`)
+
+| Method | Endpoint | Permission Required | Description |
+|---|---|---|---|
+| `GET` | `/api/correlation/stats` | `alarm:read` | Retrieve AIOps noise reduction ratios and event severity distributions |
+| `POST` | `/api/correlation/process` | `alarm:update` | Trigger batch correlation scan for unlinked alarms |
+
+---
+
+## 7. Automated Test Suite Verification
+
+The Phase 4 test suite ([`backend/tests/phase4.test.js`](file:///e:/App360/backend/tests/phase4.test.js)) validates 15 deterministic scenarios:
+
+| Test ID | Scenario | Expected Behavior | Result |
+|---|---|---|---|
+| **Test 1a-d** | Same site, same device, within 5 minutes | First creates event; 2nd & 3rd join; exactly 1 event with 3 alarms | **PASS** |
+| **Test 2** | Different site isolation (`TRY001` vs `CHN001`) | Creates separate isolated event; does not join | **PASS** |
+| **Test 3** | Different device isolation (`RTR002` vs `RTR001`) | Creates separate isolated event; does not join | **PASS** |
+| **Test 4** | Exactly 5-minute boundary ($\Delta t = 300,000\text{ ms}$) | Joins existing event | **PASS** |
+| **Test 5** | Boundary $> 5$ minutes ($\Delta t = 301,000\text{ ms}$) | Fails boundary condition; creates new separate event | **PASS** |
+| **Test 6a-b** | Duplicate alarm idempotency | Returns `DUPLICATE`; prevents duplicate IDs in `alarmIds` | **PASS** |
+| **Test 7** | Out-of-order alarm arrival | Accurately updates `firstOccurredAt` to earlier timestamp | **PASS** |
+| **Test 8-9** | Candidate event merging ($\le 5\text{m}$ combined span) | Merges candidate events into primary; all 3 alarms consolidated | **PASS** |
+| **Test 10** | Prevent merging when combined span $> 5\text{m}$ | Merging aborted; selective minimal expansion updates 1 candidate | **PASS** |
+| **Test 11a-b** | Dynamic severity calculation & escalation | Escalates to `CRITICAL`; aggregate helper selects highest priority | **PASS** |
+| **Test 12** | Event acknowledgment lifecycle | Status transitions to `ACKNOWLEDGED` with operator notes | **PASS** |
+| **Test 13a-b** | Event resolution lifecycle & alarm clearing | Status transitions to `RESOLVED`; constituent alarms marked `CLEARED` | **PASS** |
+| **Test 14** | RBAC authorization enforcement | User with `VIEWER` role rejected with HTTP 403 FORBIDDEN | **PASS** |
+| **Test 15a-b** | Concurrent processing & correlation stats | Correctly coalesces concurrent alarms; returns noise reduction metrics | **PASS** |

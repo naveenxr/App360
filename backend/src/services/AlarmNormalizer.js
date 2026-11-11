@@ -149,3 +149,4 @@ class AlarmNormalizer {
 }
 
 module.exports = new AlarmNormalizer();
+

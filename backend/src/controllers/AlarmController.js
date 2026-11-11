@@ -50,3 +50,4 @@ class AlarmController {
 }
 
 module.exports = new AlarmController();
+

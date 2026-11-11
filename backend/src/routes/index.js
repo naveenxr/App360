@@ -6,6 +6,8 @@ const roleRoutes = require('./role.routes');
 const mockRoutes = require('./mock.routes');
 const ingestionRoutes = require('./ingestion.routes');
 const alarmRoutes = require('./alarm.routes');
+const eventRoutes = require('./event.routes');
+const correlationRoutes = require('./correlation.routes');
 
 const router = express.Router();
 
@@ -17,5 +19,7 @@ router.use('/roles', roleRoutes);
 router.use('/mock', mockRoutes);
 router.use('/ingestion', ingestionRoutes);
 router.use('/alarms', alarmRoutes);
+router.use('/events', eventRoutes);
+router.use('/correlation', correlationRoutes);
 
 module.exports = router;

@@ -8,10 +8,12 @@
     "dev": "nodemon src/server.js",
     "test:phase2": "node tests/phase2.test.js",
     "test:phase3": "node tests/phase3.test.js",
-    "test": "node tests/phase3.test.js"
+    "test:phase4": "node tests/phase4.test.js",
+    "test:all": "node tests/phase2.test.js && node tests/phase3.test.js && node tests/phase4.test.js",
+    "test": "npm run test:all"
   },
   "dependencies": {
-    "axios": "^1.21.1",
+    "axios": "^1.7.9",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

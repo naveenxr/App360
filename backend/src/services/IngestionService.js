@@ -6,6 +6,7 @@ const AlarmNormalizer = require('./AlarmNormalizer');
 const AlarmRepository = require('../repositories/AlarmRepository');
 const RawAlarmPayloadRepository = require('../repositories/RawAlarmPayloadRepository');
 const IngestionLogRepository = require('../repositories/IngestionLogRepository');
+const correlationService = require('./correlationService');
 
 class IngestionService {
   constructor() {
@@ -16,6 +17,7 @@ class IngestionService {
   /**
    * Executes a full multi-source ingestion cycle.
    * Tolerates independent source failures.
+   * Automatically triggers correlation for each ingested alarm.
    * 
    * @param {Object} options 
    * @returns {Promise<Object>} Ingestion batch summary
@@ -44,6 +46,8 @@ class IngestionService {
     let totalNormalized = 0;
     let totalDuplicates = 0;
     let totalFailed = 0;
+    let totalEventsCreated = 0;
+    let totalEventsUpdated = 0;
 
     try {
       for (const adapter of this.adapters) {
@@ -88,6 +92,19 @@ class IngestionService {
               if (isNew) {
                 sourceSummary.normalizedCount += 1;
                 totalNormalized += 1;
+
+                // 5. Automatically pass new alarm to CorrelationService
+                try {
+                  const correlationResult = await correlationService.correlateAlarm(alarm);
+                  if (correlationResult.action === 'CREATED') {
+                    totalEventsCreated += 1;
+                  } else if (correlationResult.action === 'UPDATED' || correlationResult.action === 'MERGED') {
+                    totalEventsUpdated += 1;
+                  }
+                } catch (corrErr) {
+                  // Do not block ingestion if correlation encounters an isolated error
+                  console.error(`⚠️ Correlation error for alarm [${alarm.externalAlarmId}]:`, corrErr.message);
+                }
               } else {
                 sourceSummary.duplicateCount += 1;
                 totalDuplicates += 1;
@@ -140,7 +157,7 @@ class IngestionService {
         completedAt
       });
 
-      console.log(`🏁 Batch [${batchId}] finished in ${durationMs}ms with status: [${batchStatus}]`);
+      console.log(`🏁 Batch [${batchId}] finished in ${durationMs}ms with status: [${batchStatus}] (Events Created: ${totalEventsCreated}, Updated: ${totalEventsUpdated})`);
 
       return {
         batchId,
@@ -150,6 +167,8 @@ class IngestionService {
         totalNormalized,
         totalDuplicates,
         totalFailed,
+        totalEventsCreated,
+        totalEventsUpdated,
         sources: sourceResults,
         startedAt,
         completedAt,

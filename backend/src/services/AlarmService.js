@@ -72,3 +72,4 @@ class AlarmService {
 }
 
 module.exports = new AlarmService();
+

@@ -81,3 +81,4 @@ class AlarmRepository extends BaseRepository {
 }
 
 module.exports = new AlarmRepository();
+

@@ -52,3 +52,4 @@ class SourceCAdapter extends BaseAdapter {
 }
 
 module.exports = new SourceCAdapter();
+

@@ -197,3 +197,4 @@ If `Source B` experiences a network timeout or HTTP 500 error:
 - Enable/disable toggle: `INGESTION_ENABLED=true/false`.
 - **Concurrency Mutex Lock**: An in-memory atomic lock (`isIngestionRunning`) prevents duplicate overlapping runs if a previous polling cycle takes longer than 60 seconds.
 - Single-instance note: For multi-instance clustered deployments, Redis/Redlock or MongoDB collection lease locks should be configured.
+

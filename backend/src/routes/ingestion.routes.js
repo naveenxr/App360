@@ -24,3 +24,4 @@ router.get('/logs', requirePermission('api', 'read'), (req, res, next) =>
 );
 
 module.exports = router;
+

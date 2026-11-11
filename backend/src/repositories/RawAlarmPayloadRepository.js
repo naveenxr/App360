@@ -16,3 +16,4 @@ class RawAlarmPayloadRepository extends BaseRepository {
 }
 
 module.exports = new RawAlarmPayloadRepository();
+

@@ -33,3 +33,4 @@ class IngestionLogRepository extends BaseRepository {
 }
 
 module.exports = new IngestionLogRepository();
+
