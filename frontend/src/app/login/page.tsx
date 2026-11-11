@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
-import { Activity, Lock, Mail, AlertCircle, Loader2, ShieldCheck } from 'lucide-react';
+import { Activity, Lock, Mail, AlertCircle, Loader2, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -54,61 +54,57 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 selection:bg-indigo-600 selection:text-white">
-      {/* Background Glow */}
-      <div className="absolute w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none -top-20 -left-20" />
-      <div className="absolute w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none -bottom-20 -right-20" />
-
-      <div className="w-full max-w-md relative z-10">
-        {/* Header Branding */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600 text-white shadow-xl shadow-indigo-600/30 mb-4">
-            <Activity className="w-8 h-8" />
+    <div className="min-h-screen bg-[#F7F9FC] flex flex-col justify-center items-center p-4 text-[#172B4D] selection:bg-[#2563EB] selection:text-white">
+      <div className="w-full max-w-[420px]">
+        {/* Brand Header */}
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#2563EB] text-white shadow-md shadow-[#2563EB]/20 mb-3">
+            <Activity className="w-6 h-6" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-100 tracking-tight">App360 NOC Portal</h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Network Monitoring, Ingestion & Alarm Correlation Management
+          <h1 className="text-2xl font-bold text-[#142B50] tracking-tight">App360 NOC Portal</h1>
+          <p className="text-xs text-[#64748B] mt-1">
+            Enterprise Telemetry Ingestion, AIOps Correlation & Monitoring
           </p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl backdrop-blur-sm">
+        <div className="bg-white border border-[#E5EAF1] rounded-xl p-7 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
           {error && (
-            <div className="mb-6 p-3.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0" />
+            <div className="mb-5 p-3 rounded-lg bg-[#FEF2F2] border border-[#FECACA] text-[#DC4545] text-xs flex items-center gap-2.5">
+              <AlertCircle className="w-4 h-4 shrink-0 text-[#DC4545]" />
               <span>{error}</span>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+              <label className="block text-xs font-semibold text-[#172B4D] mb-1.5">
                 Work Email Address
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Mail className="w-4 h-4 text-[#94A3B8] absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@app360.internal"
                   required
-                  className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 text-xs placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                  className="w-full pl-10 pr-3.5 py-2.5 rounded-lg bg-[#F8FAFC] border border-[#E5EAF1] text-xs text-[#172B4D] placeholder-[#94A3B8] focus:outline-none focus:border-[#2563EB] focus:bg-white focus:ring-2 focus:ring-[#2563EB]/10 transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">Password</label>
+              <label className="block text-xs font-semibold text-[#172B4D] mb-1.5">Password</label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Lock className="w-4 h-4 text-[#94A3B8] absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
                   required
-                  className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 text-xs placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                  className="w-full pl-10 pr-3.5 py-2.5 rounded-lg bg-[#F8FAFC] border border-[#E5EAF1] text-xs text-[#172B4D] placeholder-[#94A3B8] focus:outline-none focus:border-[#2563EB] focus:bg-white focus:ring-2 focus:ring-[#2563EB]/10 transition-all"
                 />
               </div>
             </div>
@@ -116,7 +112,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-2.5 mt-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-2.5 mt-2 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-semibold shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <>
@@ -129,32 +125,32 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Quick Demo Credentials for Dev & Evaluation */}
+          {/* Quick Demo Credentials */}
           {showDevCredentials && (
-            <div className="mt-8 pt-6 border-t border-slate-800">
-              <div className="flex items-center gap-1 text-[11px] font-medium text-slate-400 mb-2.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Dev / Evaluation Profiles:</span>
+            <div className="mt-6 pt-5 border-t border-[#E5EAF1]">
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#64748B] mb-2.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#2563EB]" />
+                <span>Quick Evaluation Profiles:</span>
               </div>
               <div className="grid grid-cols-3 gap-2 text-[11px]">
                 <button
                   type="button"
                   onClick={() => handleQuickLogin('admin@app360.internal', 'Admin@360!')}
-                  className="py-1.5 px-2 rounded bg-slate-800 hover:bg-slate-700/80 text-slate-300 text-center border border-slate-700 transition-colors"
+                  className="py-1.5 px-2 rounded-lg bg-[#F1F5F9] hover:bg-[#EFF6FF] text-[#172B4D] hover:text-[#2563EB] text-center font-medium border border-[#E5EAF1] hover:border-[#BFDBFE] transition-colors"
                 >
                   ADMIN
                 </button>
                 <button
                   type="button"
                   onClick={() => handleQuickLogin('engineer.test@app360.internal', 'Password123!')}
-                  className="py-1.5 px-2 rounded bg-slate-800 hover:bg-slate-700/80 text-slate-300 text-center border border-slate-700 transition-colors"
+                  className="py-1.5 px-2 rounded-lg bg-[#F1F5F9] hover:bg-[#EFF6FF] text-[#172B4D] hover:text-[#2563EB] text-center font-medium border border-[#E5EAF1] hover:border-[#BFDBFE] transition-colors"
                 >
                   ENGINEER
                 </button>
                 <button
                   type="button"
                   onClick={() => handleQuickLogin('viewer.test@app360.internal', 'Password123!')}
-                  className="py-1.5 px-2 rounded bg-slate-800 hover:bg-slate-700/80 text-slate-300 text-center border border-slate-700 transition-colors"
+                  className="py-1.5 px-2 rounded-lg bg-[#F1F5F9] hover:bg-[#EFF6FF] text-[#172B4D] hover:text-[#2563EB] text-center font-medium border border-[#E5EAF1] hover:border-[#BFDBFE] transition-colors"
                 >
                   VIEWER
                 </button>
@@ -164,11 +160,11 @@ export default function LoginPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-[11px] text-slate-400 mt-6">
-          App360 Carrier-grade NOC &copy; 2026. Enterprise RBAC Enforced.
-        </p>
+        <div className="text-center text-[11px] text-[#64748B] mt-5 flex items-center justify-center gap-1.5">
+          <CheckCircle2 className="w-3.5 h-3.5 text-[#16A36A]" />
+          <span>App360 Carrier-grade NOC &copy; 2026. Enterprise RBAC Enforced.</span>
+        </div>
       </div>
     </div>
   );
 }
-

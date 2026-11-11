@@ -187,13 +187,13 @@ export default function PermissionMatrixPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E5EAF1]">
         <div>
-          <h1 className="text-xl font-bold text-slate-100 tracking-tight flex items-center gap-2">
-            <Grid3X3 className="w-5 h-5 text-indigo-400" />
+          <h1 className="text-xl font-bold text-[#172B4D] tracking-tight flex items-center gap-2">
+            <Grid3X3 className="w-5 h-5 text-[#2563EB]" />
             <span>Dynamic Permission Matrix</span>
           </h1>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-[#64748B]">
             Carrier-grade dynamic authorization matrix configured across 9 system modules and 4 action primitives
           </p>
         </div>
@@ -205,16 +205,16 @@ export default function PermissionMatrixPage() {
               fetchMatrix();
             }}
             disabled={isRefreshing}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition-colors"
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium bg-white hover:bg-slate-50 text-[#172B4D] border border-[#E5EAF1] shadow-sm transition-colors"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-indigo-400' : 'text-slate-400'}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-[#2563EB]' : 'text-[#64748B]'}`} />
             <span>Refresh</span>
           </button>
 
           {isAdministrator && !isSelectedAdmin && (
             <button
               onClick={() => setIsConfirmModalOpen(true)}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 transition-all"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold bg-[#2563EB] hover:bg-blue-700 text-white shadow-sm transition-all"
             >
               <Save className="w-3.5 h-3.5" />
               <span>Save Changes</span>
@@ -224,16 +224,16 @@ export default function PermissionMatrixPage() {
       </div>
 
       {/* Target View Switcher (Role vs Operator) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs">
-        <div className="flex items-center gap-2">
-          <span className="text-slate-400 font-medium">Matrix View Target:</span>
-          <div className="inline-flex rounded-lg bg-slate-950 p-1 border border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-white border border-[#E5EAF1] shadow-sm text-xs">
+        <div className="flex items-center gap-2.5">
+          <span className="text-[#172B4D] font-medium">Matrix View Target:</span>
+          <div className="inline-flex rounded-lg bg-slate-100 p-1 border border-[#E5EAF1]">
             <button
               onClick={() => setViewMode('ROLE')}
               className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
                 viewMode === 'ROLE'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-[#2563EB] text-white shadow-sm'
+                  : 'text-[#64748B] hover:text-[#172B4D]'
               }`}
             >
               By Role ({roles.length})
@@ -242,8 +242,8 @@ export default function PermissionMatrixPage() {
               onClick={() => setViewMode('OPERATOR')}
               className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
                 viewMode === 'OPERATOR'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-[#2563EB] text-white shadow-sm'
+                  : 'text-[#64748B] hover:text-[#172B4D]'
               }`}
             >
               By Operator ({allUsers.length})
@@ -253,12 +253,12 @@ export default function PermissionMatrixPage() {
 
         {viewMode === 'OPERATOR' && allUsers.length > 0 && (
           <div className="flex items-center gap-2">
-            <User className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="text-slate-400">Select Operator:</span>
+            <User className="w-3.5 h-3.5 text-[#2563EB]" />
+            <span className="text-[#64748B]">Select Operator:</span>
             <select
               value={selectedUserId}
               onChange={(e) => handleUserSelect(e.target.value)}
-              className="px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-100 font-medium focus:outline-none focus:border-indigo-500"
+              className="px-3 py-1.5 rounded-lg bg-white border border-[#E5EAF1] text-xs text-[#172B4D] font-medium focus:outline-none focus:border-[#2563EB]"
             >
               {allUsers.map((u) => (
                 <option key={u.id} value={u.id}>
@@ -271,7 +271,7 @@ export default function PermissionMatrixPage() {
       </div>
 
       {/* Role Switcher Tabs */}
-      <div className="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900 border border-slate-800 overflow-x-auto text-xs">
+      <div className="flex items-center gap-2 p-1.5 rounded-xl bg-white border border-[#E5EAF1] shadow-sm overflow-x-auto text-xs">
         {roles.map((r) => {
           const rId = r.id || r._id || '';
           const isSelected = rId === selectedRoleId;
@@ -283,16 +283,16 @@ export default function PermissionMatrixPage() {
               onClick={() => handleRoleChange(rId)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${
                 isSelected
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  ? 'bg-[#2563EB] text-white shadow-sm font-semibold'
+                  : 'text-[#64748B] hover:text-[#172B4D] hover:bg-slate-50'
               }`}
             >
               <span>{r.name}</span>
-              {isSys && <Lock className="w-3 h-3 text-amber-400 opacity-80" />}
+              {isSys && <Lock className="w-3 h-3 text-amber-500 opacity-90" />}
               {r.assignedUsers && r.assignedUsers.length > 0 && (
                 <span
                   className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-[#64748B]'
                   }`}
                 >
                   {r.assignedUsers.length}
@@ -304,11 +304,11 @@ export default function PermissionMatrixPage() {
       </div>
 
       {/* Assigned Operators Roster for Selected Role */}
-      <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+      <div className="p-3.5 rounded-xl bg-slate-50 border border-[#E5EAF1] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-2">
-          <Users className="w-4 h-4 text-indigo-400 shrink-0" />
-          <span className="text-slate-300 font-medium">
-            Operators Assigned to <span className="text-indigo-400 font-bold">{selectedRole?.name}</span> (
+          <Users className="w-4 h-4 text-[#2563EB] shrink-0" />
+          <span className="text-[#172B4D] font-medium">
+            Operators Assigned to <span className="text-[#2563EB] font-bold">{selectedRole?.name}</span> (
             {selectedRole?.assignedUsers?.length || 0}):
           </span>
         </div>
@@ -317,68 +317,68 @@ export default function PermissionMatrixPage() {
             selectedRole.assignedUsers.map((u) => (
               <span
                 key={u.id}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white border border-[#E5EAF1] text-[#172B4D] text-xs shadow-xs"
               >
-                <span className={`w-1.5 h-1.5 rounded-full ${u.isActive ? 'bg-emerald-400' : 'bg-red-400'}`} />
-                <span className="font-semibold text-slate-100">{u.name}</span>
-                <span className="text-[10px] text-slate-500 font-mono">({u.email})</span>
+                <span className={`w-1.5 h-1.5 rounded-full ${u.isActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                <span className="font-semibold text-[#172B4D]">{u.name}</span>
+                <span className="text-[10px] text-[#64748B] font-mono">({u.email})</span>
               </span>
             ))
           ) : (
-            <span className="text-slate-500 italic">No operators currently assigned to this role</span>
+            <span className="text-[#64748B] italic">No operators currently assigned to this role</span>
           )}
         </div>
       </div>
 
       {/* Notifications */}
       {error && (
-        <div className="p-3.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+        <div className="p-3.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {successMsg && (
-        <div className="p-3.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2">
+        <div className="p-3.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {isSelectedAdmin && (
-        <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-purple-400 shrink-0" />
+        <div className="p-3 rounded-lg bg-purple-50 border border-purple-200 text-purple-800 text-xs flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-purple-600 shrink-0" />
           <span>
-            The <strong className="text-white">ADMIN</strong> role possesses inherent full administrative bypass across all modules. Module toggles are locked for system security integrity.
+            The <strong className="text-purple-900">ADMIN</strong> role possesses inherent full administrative bypass across all modules. Module toggles are locked for system security integrity.
           </span>
         </div>
       )}
 
       {/* Matrix Table */}
-      <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden shadow-sm">
-        <div className="p-4 bg-slate-950/70 border-b border-slate-800 flex items-center justify-between text-xs">
+      <div className="rounded-xl border border-[#E5EAF1] bg-white overflow-hidden shadow-sm">
+        <div className="p-4 bg-slate-50/80 border-b border-[#E5EAF1] flex items-center justify-between text-xs">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-indigo-400" />
-            <span className="font-semibold text-slate-200">
-              Active Profile: <span className="font-bold text-indigo-400">{selectedRole?.name}</span>
+            <ShieldCheck className="w-4 h-4 text-[#2563EB]" />
+            <span className="font-semibold text-[#172B4D]">
+              Active Profile: <span className="font-bold text-[#2563EB]">{selectedRole?.name}</span>
             </span>
           </div>
-          <span className="text-[11px] text-slate-500 flex items-center gap-1">
-            <HelpCircle className="w-3 h-3" />
+          <span className="text-[11px] text-[#64748B] flex items-center gap-1">
+            <HelpCircle className="w-3.5 h-3.5" />
             <span>Changes persist directly into MongoDB and apply without server restart</span>
           </span>
         </div>
 
         {isLoading ? (
-          <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-3">
-            <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+          <div className="py-20 flex flex-col items-center justify-center text-[#64748B] gap-3">
+            <Loader2 className="w-8 h-8 text-[#2563EB] animate-spin" />
             <p className="text-xs">Loading matrix configuration...</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-slate-800 bg-slate-950 text-slate-400 text-[10px] font-semibold uppercase tracking-wider">
+                <tr className="border-b border-[#E5EAF1] bg-slate-50/60 text-[#64748B] text-[10px] font-semibold uppercase tracking-wider">
                   <th className="py-3.5 px-6">System Module (Row)</th>
                   {ACTIONS.map((a) => (
                     <th key={a.key} className="py-3.5 px-6 text-center">
@@ -387,15 +387,15 @@ export default function PermissionMatrixPage() {
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 text-slate-300">
+              <tbody className="divide-y divide-[#E5EAF1] text-[#172B4D]">
                 {MODULES_SPEC.map((m) => {
                   const modPerm = permissions[m.id] || { read: false, create: false, update: false, delete: false };
 
                   return (
-                    <tr key={m.id} className="hover:bg-slate-800/40 transition-colors">
+                    <tr key={m.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="py-3.5 px-6">
-                        <p className="font-semibold text-slate-200">{m.label}</p>
-                        <p className="text-[11px] text-slate-500">{m.desc}</p>
+                        <p className="font-semibold text-[#172B4D]">{m.label}</p>
+                        <p className="text-[11px] text-[#64748B]">{m.desc}</p>
                       </td>
 
                       {ACTIONS.map((a) => {
@@ -414,8 +414,8 @@ export default function PermissionMatrixPage() {
                               }
                               className={`w-8 h-8 rounded-lg border inline-flex items-center justify-center font-bold text-xs transition-all ${
                                 isGranted
-                                  ? 'bg-indigo-600/20 border-indigo-500 text-indigo-400 shadow-sm shadow-indigo-600/30'
-                                  : 'bg-slate-950 border-slate-800 text-slate-600 hover:border-slate-700'
+                                  ? 'bg-emerald-50 border-emerald-300 text-emerald-600 shadow-sm'
+                                  : 'bg-slate-50 border-[#E5EAF1] text-slate-300 hover:border-slate-300 hover:text-slate-400'
                               } ${!isAdministrator || isSelectedAdmin ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:scale-105'}`}
                             >
                               {isGranted ? '✓' : '—'}
@@ -440,20 +440,20 @@ export default function PermissionMatrixPage() {
         maxWidth="md"
       >
         <div className="space-y-4">
-          <p className="text-xs text-slate-300 leading-relaxed">
+          <p className="text-xs text-[#172B4D] leading-relaxed">
             You are committing updated module authorization boundaries for{' '}
-            <span className="font-bold text-slate-100">{selectedRole?.name}</span>.
+            <span className="font-bold text-[#172B4D]">{selectedRole?.name}</span>.
             <br />
-            <span className="text-slate-400 mt-2 block">
+            <span className="text-[#64748B] mt-2 block">
               Confirming this operation updates the MongoDB role document. All subsequent API calls made by users assigned to this role will be instantly validated against these rules.
             </span>
           </p>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800 text-xs">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#E5EAF1] text-xs">
             <button
               type="button"
               onClick={() => setIsConfirmModalOpen(false)}
-              className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition-colors"
+              className="px-4 py-2 rounded-lg bg-white hover:bg-slate-50 text-[#172B4D] font-medium border border-[#E5EAF1] transition-colors"
             >
               Cancel
             </button>
@@ -461,7 +461,7 @@ export default function PermissionMatrixPage() {
               type="button"
               onClick={handleSave}
               disabled={isSaving}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-600/30 transition-all disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2563EB] hover:bg-blue-700 text-white font-semibold shadow-sm transition-all disabled:opacity-50"
             >
               {isSaving ? (
                 <>

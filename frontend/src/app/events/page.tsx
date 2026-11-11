@@ -26,8 +26,7 @@ import {
   ChevronRight,
   Radio,
   RotateCcw,
-  History,
-  ShieldAlert
+  History
 } from 'lucide-react';
 
 export default function EventsPage() {
@@ -56,8 +55,8 @@ export default function EventsPage() {
   const [selectedEventAlarms, setSelectedEventAlarms] = useState<RelatedAlarmsResponse | null>(null);
   const [isLoadingAlarms, setIsLoadingAlarms] = useState(false);
 
-  // Action Modals (Acknowledge / Resolve)
-  const [activeActionModal, setActiveActionModal] = useState<'ACK' | 'RESOLVE' | null>(null);
+  // Action Modals (Acknowledge / Resolve / Reopen)
+  const [activeActionModal, setActiveActionModal] = useState<'ACK' | 'RESOLVE' | 'REOPEN' | null>(null);
   const [targetEvent, setTargetEvent] = useState<CorrelatedEvent | null>(null);
   const [actionNotes, setActionNotes] = useState('');
   const [isSubmittingAction, setIsSubmittingAction] = useState(false);
@@ -145,7 +144,6 @@ export default function EventsPage() {
         })
       );
 
-      // If active targetEvent in action modal is being modified, synchronize it
       setTargetEvent((prev) => {
         if (!prev) return null;
         const isMatch =
@@ -179,7 +177,7 @@ export default function EventsPage() {
     }
   };
 
-  const handleOpenActionModal = (event: CorrelatedEvent, type: 'ACK' | 'RESOLVE') => {
+  const handleOpenActionModal = (event: CorrelatedEvent, type: 'ACK' | 'RESOLVE' | 'REOPEN') => {
     setTargetEvent(event);
     setActiveActionModal(type);
     setActionNotes('');
@@ -194,8 +192,10 @@ export default function EventsPage() {
     try {
       if (activeActionModal === 'ACK') {
         await eventService.acknowledgeEvent(eventId, actionNotes);
-      } else {
+      } else if (activeActionModal === 'RESOLVE') {
         await eventService.resolveEvent(eventId, actionNotes);
+      } else if (activeActionModal === 'REOPEN') {
+        await eventService.reopenEvent(eventId, actionNotes);
       }
       setActiveActionModal(null);
       setTargetEvent(null);
@@ -236,13 +236,13 @@ export default function EventsPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E5EAF1]">
         <div>
-          <h1 className="text-xl font-bold text-slate-100 tracking-tight flex items-center gap-2">
-            <Layers className="w-5 h-5 text-indigo-400" />
+          <h1 className="text-xl font-bold text-[#142B50] tracking-tight flex items-center gap-2">
+            <Layers className="w-5 h-5 text-[#2563EB]" />
             <span>AIOps Correlated Incidents</span>
           </h1>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-[#64748B] mt-0.5">
             Automated spatial and 5-minute temporal window grouping suppressing alarm storms
           </p>
         </div>
@@ -250,38 +250,38 @@ export default function EventsPage() {
         <button
           onClick={fetchEvents}
           disabled={isLoading}
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition-all disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold bg-white hover:bg-[#F8FAFC] text-[#172B4D] border border-[#E5EAF1] shadow-sm hover:border-[#CBD5E1] transition-all disabled:opacity-50"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-indigo-400' : 'text-slate-400'}`} />
+          <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-[#2563EB]' : 'text-[#64748B]'}`} />
           <span>Refresh</span>
         </button>
       </div>
 
       {/* Live Correlated Event Real-Time Banner */}
       {liveBanner && (
-        <div className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-indigo-950/60 border border-indigo-500/40 text-indigo-300 text-xs shadow-lg animate-pulse">
+        <div className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-[#EFF6FF] border border-[#BFDBFE] text-[#1E40AF] text-xs shadow-sm animate-pulse">
           <div className="flex items-center gap-2.5">
-            <Radio className="w-4 h-4 text-emerald-400 animate-spin" />
-            <span className="font-medium text-slate-100">{liveBanner}</span>
+            <Radio className="w-4 h-4 text-[#16A36A] animate-spin" />
+            <span className="font-semibold text-[#1E40AF]">{liveBanner}</span>
           </div>
-          <span className="text-[10px] font-mono tracking-wider px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+          <span className="text-[10px] font-mono tracking-wider px-2 py-0.5 rounded bg-white text-[#2563EB] border border-[#BFDBFE] font-bold">
             AIOPS CORRELATION STREAM
           </span>
         </div>
       )}
 
       {/* Filter Toolbar */}
-      <div className="p-4 rounded-xl border border-slate-800 bg-slate-900 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="p-4 rounded-xl border border-[#E5EAF1] bg-white grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 shadow-sm">
         {/* Severity */}
         <div>
-          <label className="block text-[11px] font-medium text-slate-400 mb-1">Severity</label>
+          <label className="block text-[11px] font-semibold text-[#64748B] mb-1">Severity</label>
           <select
             value={severity}
             onChange={(e) => {
               setSeverity(e.target.value);
               setPage(1);
             }}
-            className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+            className="w-full px-3 py-2 rounded-lg bg-[#F8FAFC] border border-[#E5EAF1] text-xs text-[#172B4D] focus:outline-none focus:border-[#2563EB] focus:bg-white"
           >
             <option value="">All Severities</option>
             <option value="CRITICAL">Critical</option>
@@ -294,14 +294,14 @@ export default function EventsPage() {
 
         {/* Status */}
         <div>
-          <label className="block text-[11px] font-medium text-slate-400 mb-1">Incident Status</label>
+          <label className="block text-[11px] font-semibold text-[#64748B] mb-1">Incident Status</label>
           <select
             value={status}
             onChange={(e) => {
               setStatus(e.target.value);
               setPage(1);
             }}
-            className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+            className="w-full px-3 py-2 rounded-lg bg-[#F8FAFC] border border-[#E5EAF1] text-xs text-[#172B4D] focus:outline-none focus:border-[#2563EB] focus:bg-white"
           >
             <option value="">All Statuses</option>
             <option value="OPEN">Open (Active)</option>
@@ -312,9 +312,9 @@ export default function EventsPage() {
 
         {/* Site search */}
         <div>
-          <label className="block text-[11px] font-medium text-slate-400 mb-1">Site ID</label>
+          <label className="block text-[11px] font-semibold text-[#64748B] mb-1">Site ID</label>
           <div className="relative">
-            <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-[#94A3B8] absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={siteSearch}
@@ -323,16 +323,16 @@ export default function EventsPage() {
                 setPage(1);
               }}
               placeholder="e.g. CHN001"
-              className="w-full pl-8 pr-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 uppercase placeholder:text-slate-600 focus:outline-none focus:border-indigo-500"
+              className="w-full pl-8 pr-3 py-2 rounded-lg bg-[#F8FAFC] border border-[#E5EAF1] text-xs text-[#172B4D] uppercase placeholder-[#94A3B8] focus:outline-none focus:border-[#2563EB] focus:bg-white"
             />
           </div>
         </div>
 
         {/* Device search */}
         <div>
-          <label className="block text-[11px] font-medium text-slate-400 mb-1">Device ID</label>
+          <label className="block text-[11px] font-semibold text-[#64748B] mb-1">Device ID</label>
           <div className="relative">
-            <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-[#94A3B8] absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={deviceSearch}
@@ -341,17 +341,17 @@ export default function EventsPage() {
                 setPage(1);
               }}
               placeholder="e.g. RTR001"
-              className="w-full pl-8 pr-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 uppercase placeholder:text-slate-600 focus:outline-none focus:border-indigo-500"
+              className="w-full pl-8 pr-3 py-2 rounded-lg bg-[#F8FAFC] border border-[#E5EAF1] text-xs text-[#172B4D] uppercase placeholder-[#94A3B8] focus:outline-none focus:border-[#2563EB] focus:bg-white"
             />
           </div>
         </div>
       </div>
 
       {/* Events Table */}
-      <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden shadow-sm">
+      <div className="rounded-xl border border-[#E5EAF1] bg-white overflow-hidden shadow-sm">
         {isLoading ? (
-          <div className="p-16 flex flex-col items-center justify-center text-slate-400">
-            <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mb-3" />
+          <div className="p-16 flex flex-col items-center justify-center text-[#64748B]">
+            <Loader2 className="w-8 h-8 animate-spin text-[#2563EB] mb-3" />
             <span className="text-xs">Correlating active incidents...</span>
           </div>
         ) : events.length === 0 ? (
@@ -364,7 +364,7 @@ export default function EventsPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-950/60 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+              <thead className="bg-[#F8FAFC] text-[11px] uppercase tracking-wider text-[#64748B] font-semibold border-b border-[#E5EAF1]">
                 <tr>
                   <th className="py-3 px-4">Severity</th>
                   <th className="py-3 px-4">Incident ID</th>
@@ -376,7 +376,7 @@ export default function EventsPage() {
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 font-mono text-slate-300">
+              <tbody className="divide-y divide-[#E5EAF1] font-mono text-[#172B4D]">
                 {events.map((event) => {
                   const isNewArrival =
                     recentIncidentId &&
@@ -389,35 +389,35 @@ export default function EventsPage() {
                       key={event.id}
                       className={`transition-colors ${
                         isNewArrival
-                          ? 'bg-indigo-900/40 border-l-2 border-indigo-400 animate-pulse'
-                          : 'hover:bg-slate-800/40'
+                          ? 'bg-[#EFF6FF] border-l-2 border-[#2563EB]'
+                          : 'hover:bg-[#F8FAFC]'
                       }`}
                     >
                       <td className="py-3 px-4 font-sans">
                         <Badge variant="severity" severity={event.severity as SeverityLevel} />
                       </td>
-                      <td className="py-3 px-4 font-semibold text-slate-100">
+                      <td className="py-3 px-4 font-semibold text-[#172B4D]">
                         {event.eventId}
                       </td>
                       <td className="py-3 px-4">
-                        <span className="text-indigo-400 font-semibold">{event.siteId}</span>
-                        <span className="text-slate-600 mx-1.5">/</span>
-                        <span className="text-slate-200">{event.deviceId}</span>
+                        <span className="text-[#2563EB] font-semibold">{event.siteId}</span>
+                        <span className="text-[#94A3B8] mx-1.5">/</span>
+                        <span className="text-[#475569]">{event.deviceId}</span>
                       </td>
-                      <td className="py-3 px-4 font-sans text-slate-400 text-[11px]">
+                      <td className="py-3 px-4 font-sans text-[#64748B] text-[11px]">
                         {event.correlationRule}
                       </td>
-                      <td className="py-3 px-4 font-sans text-slate-300">
+                      <td className="py-3 px-4 font-sans text-[#475569]">
                         <div className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5 text-slate-500" />
+                          <Clock className="w-3.5 h-3.5 text-[#94A3B8]" />
                           <span>{formatSpan(event.firstOccurredAt, event.lastOccurredAt)}</span>
-                          <span className="text-[10px] text-slate-500">(&le; 5m)</span>
+                          <span className="text-[10px] text-[#94A3B8]">(&le; 5m)</span>
                         </div>
                       </td>
                       <td className="py-3 px-4 font-sans">
                         <button
                           onClick={() => handleOpenDrillDown(event)}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/20 transition-colors"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#EFF6FF] text-[#2563EB] hover:bg-[#DBEAFE] border border-[#BFDBFE] transition-colors"
                         >
                           <Layers className="w-3 h-3" />
                           <span>{event.alarmIds?.length || 0} Alarms</span>
@@ -431,7 +431,7 @@ export default function EventsPage() {
                           <button
                             onClick={() => handleOpenDrillDown(event)}
                             title="View Constituent Alarms & Drill-down"
-                            className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+                            className="p-1.5 rounded-lg bg-[#F8FAFC] hover:bg-[#EFF6FF] text-[#2563EB] border border-[#E5EAF1] hover:border-[#BFDBFE] transition-colors"
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>
@@ -440,7 +440,7 @@ export default function EventsPage() {
                             <button
                               onClick={() => handleOpenActionModal(event, 'ACK')}
                               title="Acknowledge Incident"
-                              className="p-1.5 rounded bg-slate-800 hover:bg-indigo-600/20 hover:text-indigo-400 text-slate-300 border border-slate-700 transition-colors"
+                              className="p-1.5 rounded-lg bg-[#F8FAFC] hover:bg-[#EFF6FF] text-[#2563EB] border border-[#E5EAF1] hover:border-[#BFDBFE] transition-colors"
                             >
                               <Check className="w-3.5 h-3.5" />
                             </button>
@@ -450,9 +450,19 @@ export default function EventsPage() {
                             <button
                               onClick={() => handleOpenActionModal(event, 'RESOLVE')}
                               title="Resolve Incident & Clear Alarms"
-                              className="p-1.5 rounded bg-slate-800 hover:bg-emerald-600/20 hover:text-emerald-400 text-slate-300 border border-slate-700 transition-colors"
+                              className="p-1.5 rounded-lg bg-[#F8FAFC] hover:bg-[#ECFDF5] text-[#16A36A] border border-[#E5EAF1] hover:border-[#A7F3D0] transition-colors"
                             >
                               <CheckCircle className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+
+                          {event.status === 'RESOLVED' && canUpdateEvents && (
+                            <button
+                              onClick={() => handleOpenActionModal(event, 'REOPEN')}
+                              title="Reopen Incident"
+                              className="p-1.5 rounded-lg bg-[#F8FAFC] hover:bg-[#FFFBEB] text-[#D97706] border border-[#E5EAF1] hover:border-[#FDE68A] transition-colors"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
                             </button>
                           )}
                         </div>
@@ -466,27 +476,27 @@ export default function EventsPage() {
         )}
 
         {/* Pagination Toolbar */}
-        <div className="px-6 py-3.5 bg-slate-950/60 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+        <div className="px-6 py-3.5 bg-[#F8FAFC] border-t border-[#E5EAF1] flex items-center justify-between text-xs text-[#64748B]">
           <div>
-            Showing <span className="font-semibold text-slate-200">{events.length}</span> of{' '}
-            <span className="font-semibold text-slate-200">{total}</span> incidents
+            Showing <span className="font-semibold text-[#172B4D]">{events.length}</span> of{' '}
+            <span className="font-semibold text-[#172B4D]">{total}</span> incidents
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPage((p) => Math.max(p - 1, 1))}
               disabled={page <= 1 || isLoading}
-              className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed border border-slate-700"
+              className="p-1.5 rounded-lg bg-white hover:bg-[#F1F5F9] text-[#172B4D] disabled:opacity-30 disabled:cursor-not-allowed border border-[#E5EAF1] transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="px-2 text-slate-300 font-medium">
+            <span className="px-2 text-[#172B4D] font-medium">
               Page {page} of {totalPages}
             </span>
             <button
               onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
               disabled={page >= totalPages || isLoading}
-              className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed border border-slate-700"
+              className="p-1.5 rounded-lg bg-white hover:bg-[#F1F5F9] text-[#172B4D] disabled:opacity-30 disabled:cursor-not-allowed border border-[#E5EAF1] transition-colors"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -494,7 +504,7 @@ export default function EventsPage() {
         </div>
       </div>
 
-      {/* Drill-down Modal (Constituent Alarms List) */}
+      {/* Drill-down Modal (Constituent Alarms List & History) */}
       <Modal
         isOpen={Boolean(selectedEventAlarms || isLoadingAlarms)}
         onClose={() => setSelectedEventAlarms(null)}
@@ -502,54 +512,94 @@ export default function EventsPage() {
         maxWidth="4xl"
       >
         {isLoadingAlarms ? (
-          <div className="py-12 flex justify-center items-center text-slate-400">
-            <Loader2 className="w-6 h-6 animate-spin text-indigo-500 mr-2" />
-            <span className="text-sm">Fetching correlated constituent alarms...</span>
+          <div className="py-12 flex justify-center items-center text-[#64748B]">
+            <Loader2 className="w-6 h-6 animate-spin text-[#2563EB] mr-2" />
+            <span className="text-sm font-medium">Fetching correlated constituent alarms...</span>
           </div>
         ) : selectedEventAlarms ? (
           <div className="space-y-4">
-            <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 flex flex-wrap items-center justify-between gap-4 text-xs">
+            <div className="p-3.5 rounded-lg bg-[#F8FAFC] border border-[#E5EAF1] flex flex-wrap items-center justify-between gap-4 text-xs">
               <div>
-                <span className="text-slate-400">Target Facility: </span>
-                <span className="font-bold text-indigo-400">{selectedEventAlarms.siteId}</span>
-                <span className="text-slate-600 mx-2">|</span>
-                <span className="text-slate-400">Device: </span>
-                <span className="font-bold text-slate-200">{selectedEventAlarms.deviceId}</span>
+                <span className="text-[#64748B]">Target Facility: </span>
+                <span className="font-bold text-[#2563EB]">{selectedEventAlarms.siteId}</span>
+                <span className="text-[#CBD5E1] mx-2">|</span>
+                <span className="text-[#64748B]">Device: </span>
+                <span className="font-bold text-[#172B4D]">{selectedEventAlarms.deviceId}</span>
               </div>
-              <div>
-                <span className="text-slate-400">Aggregate Severity: </span>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE]">
+                  {selectedEventAlarms.correlationRule || 'SAME_SITE_DEVICE_5MIN'}
+                </span>
+                <span className="text-[#64748B]">Severity: </span>
                 <Badge variant="severity" severity={selectedEventAlarms.severity} />
               </div>
             </div>
 
-            <div className="overflow-x-auto rounded-lg border border-slate-800">
+            {selectedEventAlarms.notes && (
+              <div className="p-3 rounded-lg bg-[#F8FAFC] border border-[#E5EAF1] text-xs">
+                <span className="text-[#64748B] font-semibold block mb-1">Latest Operational Notes:</span>
+                <p className="text-[#172B4D] italic">{selectedEventAlarms.notes}</p>
+              </div>
+            )}
+
+            {/* Lifecycle Status History Timeline */}
+            {selectedEventAlarms.statusHistory && selectedEventAlarms.statusHistory.length > 0 && (
+              <div className="p-3.5 rounded-lg bg-[#F8FAFC] border border-[#E5EAF1] text-xs space-y-2">
+                <div className="flex items-center gap-1.5 text-[#172B4D] font-semibold">
+                  <History className="w-3.5 h-3.5 text-[#2563EB]" />
+                  <span>Incident Lifecycle & Status Audit Trail ({selectedEventAlarms.statusHistory.length})</span>
+                </div>
+                <div className="space-y-1.5 pl-2 border-l-2 border-[#CBD5E1]">
+                  {selectedEventAlarms.statusHistory.map((item, idx) => {
+                    const author =
+                      typeof item.changedBy === 'object' && item.changedBy !== null
+                        ? item.changedBy.name || item.changedBy.email
+                        : String(item.changedBy || 'System/AIOps');
+                    return (
+                      <div key={idx} className="flex items-start justify-between gap-2 text-[11px] text-[#172B4D]">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="status" status={item.status} />
+                          <span className="text-[#64748B] font-sans">by <span className="text-[#172B4D] font-semibold">{author}</span></span>
+                          {item.notes && <span className="text-[#475569] italic font-sans">— &quot;{item.notes}&quot;</span>}
+                        </div>
+                        <span className="text-[#94A3B8] font-mono text-[10px] shrink-0">
+                          {new Date(item.changedAt).toLocaleString()}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="overflow-x-auto rounded-lg border border-[#E5EAF1]">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-950 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                <thead className="bg-[#F8FAFC] text-[11px] uppercase tracking-wider text-[#64748B] font-semibold border-b border-[#E5EAF1]">
                   <tr>
                     <th className="py-2.5 px-3">Severity</th>
                     <th className="py-2.5 px-3">Alarm ID</th>
                     <th className="py-2.5 px-3">Type</th>
                     <th className="py-2.5 px-3">Message</th>
-                    <th className="py-2.5 px-3">Timestamp (UTC)</th>
+                    <th className="py-2.5 px-3">Timestamp</th>
                     <th className="py-2.5 px-3 text-right">Raw Wire</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800 font-mono text-slate-300">
+                <tbody className="divide-y divide-[#E5EAF1] font-mono text-[#172B4D]">
                   {selectedEventAlarms.alarms?.map((a) => (
-                    <tr key={a.id} className="hover:bg-slate-800/30">
+                    <tr key={a.id} className="hover:bg-[#F8FAFC]">
                       <td className="py-2 px-3 font-sans">
                         <Badge variant="severity" severity={a.severity} />
                       </td>
-                      <td className="py-2 px-3 text-slate-100 font-semibold">{a.externalAlarmId}</td>
-                      <td className="py-2 px-3 text-slate-300 font-sans">{a.alarmType}</td>
-                      <td className="py-2 px-3 text-slate-400 font-sans truncate max-w-xs">{a.message}</td>
-                      <td className="py-2 px-3 text-[11px] text-slate-400">
-                        {new Date(a.timestamp).toISOString().replace('T', ' ').substring(0, 19)}
+                      <td className="py-2 px-3 text-[#172B4D] font-semibold">{a.externalAlarmId}</td>
+                      <td className="py-2 px-3 text-[#475569] font-sans">{a.alarmType}</td>
+                      <td className="py-2 px-3 text-[#64748B] font-sans truncate max-w-xs">{a.message}</td>
+                      <td className="py-2 px-3 text-[11px] text-[#64748B]">
+                        {new Date(a.timestamp).toLocaleString()}
                       </td>
                       <td className="py-2 px-3 text-right font-sans">
                         <button
                           onClick={() => handleViewRawFromAlarm(a)}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-indigo-300 text-xs border border-slate-700"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#F8FAFC] hover:bg-[#EFF6FF] text-[#2563EB] text-xs font-medium border border-[#E5EAF1] hover:border-[#BFDBFE]"
                         >
                           <Code className="w-3 h-3" />
                           <span>Payload</span>
@@ -564,33 +614,37 @@ export default function EventsPage() {
         ) : null}
       </Modal>
 
-      {/* Action Modal (Acknowledge / Resolve) */}
+      {/* Action Modal (Acknowledge / Resolve / Reopen) */}
       <Modal
         isOpen={Boolean(activeActionModal && targetEvent)}
         onClose={() => setActiveActionModal(null)}
         title={
           activeActionModal === 'ACK'
             ? `Acknowledge Incident: ${targetEvent?.eventId}`
-            : `Resolve Incident: ${targetEvent?.eventId}`
+            : activeActionModal === 'RESOLVE'
+            ? `Resolve Incident: ${targetEvent?.eventId}`
+            : `Reopen Incident: ${targetEvent?.eventId}`
         }
         maxWidth="md"
       >
         <div className="space-y-4">
           {actionError && (
-            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+            <div className="p-3 rounded-lg bg-[#FEF2F2] border border-[#FECACA] text-[#DC4545] text-xs flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 shrink-0" />
               <span>{actionError}</span>
             </div>
           )}
 
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-[#64748B]">
             {activeActionModal === 'ACK'
               ? 'Acknowledge operational ownership of this correlated incident. The incident will transition to ACKNOWLEDGED.'
-              : 'Resolving this incident will transition its status to RESOLVED and automatically clear all constituent alarms.'}
+              : activeActionModal === 'RESOLVE'
+              ? 'Resolving this incident will transition its status to RESOLVED and automatically clear all constituent alarms.'
+              : 'Reopening this incident will transition its status back to OPEN and reactivate constituent alarms for active NOC tracking.'}
           </p>
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1.5">
+            <label className="block text-xs font-semibold text-[#172B4D] mb-1.5">
               Operator Notes / Remediation Summary
             </label>
             <textarea
@@ -598,24 +652,26 @@ export default function EventsPage() {
               onChange={(e) => setActionNotes(e.target.value)}
               placeholder="e.g. Core router fiber link reset. Traffic rerouted successfully."
               rows={3}
-              className="w-full p-3 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500"
+              className="w-full p-3 rounded-lg bg-[#F8FAFC] border border-[#E5EAF1] text-xs text-[#172B4D] placeholder-[#94A3B8] focus:outline-none focus:border-[#2563EB] focus:bg-white focus:ring-1 focus:ring-[#2563EB]"
             />
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-2">
             <button
               onClick={() => setActiveActionModal(null)}
-              className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition-colors"
+              className="px-3.5 py-2 rounded-lg bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#172B4D] text-xs font-medium transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmitAction}
               disabled={isSubmittingAction}
-              className={`px-4 py-2 rounded-lg text-white text-xs font-semibold shadow-md flex items-center gap-1.5 transition-all ${
+              className={`px-4 py-2 rounded-lg text-white text-xs font-semibold shadow-sm flex items-center gap-1.5 transition-all ${
                 activeActionModal === 'ACK'
-                  ? 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/30'
-                  : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30'
+                  ? 'bg-[#2563EB] hover:bg-[#1D4ED8]'
+                  : activeActionModal === 'RESOLVE'
+                  ? 'bg-[#16A36A] hover:bg-[#15803D]'
+                  : 'bg-[#D97706] hover:bg-[#B45309]'
               }`}
             >
               {isSubmittingAction ? (
@@ -624,7 +680,7 @@ export default function EventsPage() {
                   <span>Processing...</span>
                 </>
               ) : (
-                <span>Confirm {activeActionModal === 'ACK' ? 'Acknowledgment' : 'Resolution'}</span>
+                <span>Confirm {activeActionModal === 'ACK' ? 'Acknowledgment' : activeActionModal === 'RESOLVE' ? 'Resolution' : 'Reopening'}</span>
               )}
             </button>
           </div>
@@ -639,12 +695,12 @@ export default function EventsPage() {
         maxWidth="2xl"
       >
         {isLoadingRaw ? (
-          <div className="py-8 flex justify-center items-center text-slate-400">
-            <Loader2 className="w-6 h-6 animate-spin text-indigo-500 mr-2" />
+          <div className="py-8 flex justify-center items-center text-[#64748B]">
+            <Loader2 className="w-6 h-6 animate-spin text-[#2563EB] mr-2" />
             <span className="text-sm">Fetching wire JSON payload...</span>
           </div>
         ) : (
-          <pre className="p-4 rounded-lg bg-slate-950 border border-slate-800 text-emerald-400 text-xs font-mono overflow-x-auto max-h-[60vh]">
+          <pre className="p-4 rounded-lg bg-[#0F1F38] text-[#38BDF8] text-xs font-mono overflow-x-auto max-h-[60vh] border border-[#1E3A5F]">
             {JSON.stringify(selectedRaw, null, 2)}
           </pre>
         )}
@@ -652,4 +708,3 @@ export default function EventsPage() {
     </div>
   );
 }
-

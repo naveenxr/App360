@@ -71,7 +71,6 @@ export default function DashboardPage() {
           [sevKey]: (prev.severityDistribution[sevKey] || 0) + 1
         };
 
-        // Standardized noise reduction calculation
         const nextNoiseReduction =
           nextTotalAlarms > 0
             ? Math.max(0, Math.round(((nextTotalAlarms - prev.totalEvents) / nextTotalAlarms) * 100))
@@ -86,7 +85,6 @@ export default function DashboardPage() {
         };
       });
 
-      // Prepend to live recent alarms list if active
       if (newAlarm.status === 'ACTIVE') {
         const newAlarmId = newAlarm.id || (newAlarm as unknown as { _id?: string })._id;
         setRecentAlarms((prev) => {
@@ -166,10 +164,10 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Top Banner / Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E5EAF1]">
         <div>
-          <h1 className="text-xl font-bold text-slate-100 tracking-tight">NOC Command Dashboard</h1>
-          <p className="text-xs text-slate-400">
+          <h1 className="text-xl font-bold text-[#142B50] tracking-tight">NOC Command Dashboard</h1>
+          <p className="text-xs text-[#64748B] mt-0.5">
             Real-time multi-source network telemetry, alarm storm suppression and incident correlation
           </p>
         </div>
@@ -177,9 +175,9 @@ export default function DashboardPage() {
         <button
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition-all disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold bg-white hover:bg-[#F8FAFC] text-[#172B4D] border border-[#E5EAF1] shadow-sm hover:border-[#CBD5E1] transition-all disabled:opacity-50"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-indigo-400' : 'text-slate-400'}`} />
+          <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-[#2563EB]' : 'text-[#64748B]'}`} />
           <span>{isRefreshing ? 'Refreshing...' : 'Refresh Telemetry'}</span>
         </button>
       </div>
@@ -207,7 +205,7 @@ export default function DashboardPage() {
           value={`${summary.noiseReductionPercent}%`}
           subtitle="AIOps suppression ratio"
           trend="5-min window coalesced"
-          icon={<Sparkles className="w-5 h-5 text-indigo-400" />}
+          icon={<Sparkles className="w-5 h-5 text-[#16A36A]" />}
           variant="success"
         />
 
@@ -235,4 +233,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

@@ -121,8 +121,8 @@ export default function EditUserPage() {
 
   if (isLoading) {
     return (
-      <div className="py-24 flex flex-col items-center justify-center text-slate-400 gap-3">
-        <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+      <div className="py-24 flex flex-col items-center justify-center text-[#64748B] gap-3">
+        <Loader2 className="w-8 h-8 text-[#2563EB] animate-spin" />
         <p className="text-xs">Loading user record...</p>
       </div>
     );
@@ -130,11 +130,11 @@ export default function EditUserPage() {
 
   if (!user) {
     return (
-      <div className="max-w-2xl mx-auto p-8 rounded-xl bg-slate-900 border border-slate-800 text-center space-y-4">
-        <p className="text-sm text-slate-300">User record not found.</p>
+      <div className="max-w-2xl mx-auto p-8 rounded-xl bg-white border border-[#E5EAF1] shadow-sm text-center space-y-4">
+        <p className="text-sm font-medium text-[#172B4D]">User record not found.</p>
         <Link
           href="/dashboard/users"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all"
         >
           Return to User Directory
         </Link>
@@ -150,7 +150,7 @@ export default function EditUserPage() {
       <div>
         <Link
           href="/dashboard/users"
-          className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-[#64748B] hover:text-[#172B4D] transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to User Directory</span>
@@ -158,19 +158,19 @@ export default function EditUserPage() {
       </div>
 
       {/* Main Edit Card */}
-      <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-xl space-y-6">
+      <div className="rounded-xl border border-[#E5EAF1] bg-white p-6 shadow-sm space-y-6">
         {/* Header with Status Indicator */}
-        <div className="flex items-start justify-between pb-4 border-b border-slate-800">
+        <div className="flex items-start justify-between pb-4 border-b border-[#E5EAF1]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold text-sm">
+            <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2563EB] font-bold text-sm">
               {user.name?.charAt(0).toUpperCase()}
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
+              <h2 className="text-base font-bold text-[#172B4D] flex items-center gap-2">
                 <span>{user.name}</span>
-                <span className="font-mono text-xs text-slate-500 font-normal">({user.email})</span>
+                <span className="font-mono text-xs text-[#64748B] font-normal">({user.email})</span>
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-[#64748B]">
                 Manage profile details, assign RBAC roles and control account lifecycle
               </p>
             </div>
@@ -180,11 +180,11 @@ export default function EditUserPage() {
             <span
               className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border ${
                 isUserActive
-                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                  : 'bg-red-500/10 text-red-400 border-red-500/30'
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : 'bg-red-50 text-red-700 border-red-200'
               }`}
             >
-              <span className={`w-1.5 h-1.5 rounded-full ${isUserActive ? 'bg-emerald-400' : 'bg-red-400'}`} />
+              <span className={`w-1.5 h-1.5 rounded-full ${isUserActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
               <span>{isUserActive ? 'ACTIVE ACCOUNT' : 'DEACTIVATED'}</span>
             </span>
           </div>
@@ -192,14 +192,14 @@ export default function EditUserPage() {
 
         {/* Feedback alerts */}
         {error && (
-          <div className="p-3.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+          <div className="p-3.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {successMsg && (
-          <div className="p-3.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2">
+          <div className="p-3.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
             <span>{successMsg}</span>
           </div>
@@ -208,37 +208,37 @@ export default function EditUserPage() {
         {/* Edit Form */}
         <form onSubmit={handleSave} className="space-y-4 text-xs">
           <div>
-            <label className="block text-slate-300 font-medium mb-1.5">Full Name *</label>
+            <label className="block text-[#172B4D] font-medium mb-1.5">Full Name *</label>
             <input
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+              className="w-full px-3.5 py-2.5 rounded-lg bg-white border border-[#E5EAF1] text-[#172B4D] placeholder:text-slate-400 focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-all"
             />
           </div>
 
           <div>
-            <label className="block text-slate-300 font-medium mb-1.5">Work Email Address *</label>
+            <label className="block text-[#172B4D] font-medium mb-1.5">Work Email Address *</label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-mono"
+              className="w-full px-3.5 py-2.5 rounded-lg bg-white border border-[#E5EAF1] text-[#172B4D] placeholder:text-slate-400 focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-all font-mono"
             />
           </div>
 
           <div>
-            <label className="block text-slate-300 font-medium mb-1.5 flex items-center justify-between">
+            <label className="block text-[#172B4D] font-medium mb-1.5 flex items-center justify-between">
               <span>Assigned RBAC Role *</span>
-              <span className="text-slate-500 text-[11px]">Enforces dynamic module access</span>
+              <span className="text-[#64748B] text-[11px]">Enforces dynamic module access</span>
             </label>
             <select
               value={roleId}
               onChange={(e) => setRoleId(e.target.value)}
               required
-              className="w-full px-3.5 py-2.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+              className="w-full px-3.5 py-2.5 rounded-lg bg-white border border-[#E5EAF1] text-[#172B4D] focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-all"
             >
               {roles.map((r) => (
                 <option key={r.id || r._id} value={r.id || r._id}>
@@ -249,7 +249,7 @@ export default function EditUserPage() {
           </div>
 
           <div>
-            <label className="block text-slate-300 font-medium mb-1.5">
+            <label className="block text-[#172B4D] font-medium mb-1.5">
               Reset Password (leave blank to keep current password)
             </label>
             <input
@@ -257,12 +257,12 @@ export default function EditUserPage() {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="••••••••••••"
-              className="w-full px-3.5 py-2.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder:text-slate-600"
+              className="w-full px-3.5 py-2.5 rounded-lg bg-white border border-[#E5EAF1] text-[#172B4D] focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-all placeholder:text-slate-400"
             />
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-6 border-t border-slate-800">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-6 border-t border-[#E5EAF1]">
             {isAdministrator && (
               <button
                 type="button"
@@ -270,16 +270,16 @@ export default function EditUserPage() {
                 disabled={isTogglingStatus}
                 className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium border transition-colors ${
                   isUserActive
-                    ? 'bg-slate-800 hover:bg-red-500/10 text-slate-300 hover:text-red-400 border-slate-700'
-                    : 'bg-slate-800 hover:bg-emerald-500/10 text-slate-300 hover:text-emerald-400 border-slate-700'
+                    ? 'bg-white hover:bg-red-50 text-[#172B4D] hover:text-red-700 border-[#E5EAF1]'
+                    : 'bg-white hover:bg-emerald-50 text-[#172B4D] hover:text-emerald-700 border-[#E5EAF1]'
                 }`}
               >
                 {isTogglingStatus ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : isUserActive ? (
-                  <PowerOff className="w-3.5 h-3.5 text-red-400" />
+                  <PowerOff className="w-3.5 h-3.5 text-red-500" />
                 ) : (
-                  <Power className="w-3.5 h-3.5 text-emerald-400" />
+                  <Power className="w-3.5 h-3.5 text-emerald-500" />
                 )}
                 <span>{isUserActive ? 'Deactivate Account' : 'Reactivate Account'}</span>
               </button>
@@ -288,14 +288,14 @@ export default function EditUserPage() {
             <div className="flex items-center gap-3">
               <Link
                 href="/dashboard/users"
-                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition-colors"
+                className="px-4 py-2 rounded-lg bg-white hover:bg-slate-50 text-[#172B4D] font-medium border border-[#E5EAF1] transition-colors"
               >
                 Cancel
               </Link>
               <button
                 type="submit"
                 disabled={isSaving}
-                className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-600/30 transition-all disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-[#2563EB] hover:bg-blue-700 text-white font-semibold shadow-sm transition-all disabled:opacity-50"
               >
                 {isSaving ? (
                   <>

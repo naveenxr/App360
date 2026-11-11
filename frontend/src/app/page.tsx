@@ -20,9 +20,9 @@ export default function HomePage() {
   }, [isAuthenticated, isLoading, router]);
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-400">
-      <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-3" />
-      <p className="text-sm">Directing to App360 Network NOC...</p>
+    <div className="min-h-screen bg-[#F7F9FC] flex flex-col items-center justify-center text-[#64748B]">
+      <Loader2 className="w-8 h-8 text-[#2563EB] animate-spin mb-3" />
+      <p className="text-xs font-medium text-[#172B4D]">Directing to App360 Network NOC...</p>
     </div>
   );
 }

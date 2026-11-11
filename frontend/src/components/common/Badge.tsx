@@ -18,25 +18,31 @@ export const Badge: React.FC<BadgeProps> = ({
 }) => {
   if (variant === 'severity' && severity) {
     const s = String(severity).toUpperCase();
-    let colorClasses = 'bg-slate-700 text-slate-200 border-slate-600';
+    let colorClasses = 'bg-[#F1F5F9] text-[#475569] border-[#E2E8F0]';
+    let dotColor = 'bg-[#64748B]';
 
     if (s === 'CRITICAL') {
-      colorClasses = 'bg-red-500/10 text-red-400 border-red-500/30';
+      colorClasses = 'bg-[#FEF2F2] text-[#DC4545] border-[#FECACA]';
+      dotColor = 'bg-[#DC4545]';
     } else if (s === 'MAJOR') {
-      colorClasses = 'bg-orange-500/10 text-orange-400 border-orange-500/30';
+      colorClasses = 'bg-[#FFF7ED] text-[#EA580C] border-[#FED7AA]';
+      dotColor = 'bg-[#EA580C]';
     } else if (s === 'MINOR') {
-      colorClasses = 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30';
+      colorClasses = 'bg-[#FFFBEB] text-[#D97706] border-[#FDE68A]';
+      dotColor = 'bg-[#D97706]';
     } else if (s === 'WARNING') {
-      colorClasses = 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+      colorClasses = 'bg-[#FEFCE8] text-[#CA8A04] border-[#FEF08A]';
+      dotColor = 'bg-[#CA8A04]';
     } else if (s === 'INFO' || s === 'CLEAR') {
-      colorClasses = 'bg-blue-500/10 text-blue-400 border-blue-500/30';
+      colorClasses = 'bg-[#EFF6FF] text-[#2563EB] border-[#BFDBFE]';
+      dotColor = 'bg-[#2563EB]';
     }
 
     return (
       <span
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${colorClasses} ${className}`}
+        className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border ${colorClasses} ${className}`}
       >
-        <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5 opacity-80" />
+        <span className={`w-1.5 h-1.5 rounded-full ${dotColor} mr-1.5`} />
         {children || s}
       </span>
     );
@@ -44,19 +50,19 @@ export const Badge: React.FC<BadgeProps> = ({
 
   if (variant === 'status' && status) {
     const st = String(status).toUpperCase();
-    let colorClasses = 'bg-slate-700 text-slate-300 border-slate-600';
+    let colorClasses = 'bg-[#F1F5F9] text-[#64748B] border-[#E2E8F0]';
 
     if (st === 'ACTIVE' || st === 'OPEN') {
-      colorClasses = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+      colorClasses = 'bg-[#ECFDF5] text-[#16A36A] border-[#A7F3D0]';
     } else if (st === 'ACKNOWLEDGED') {
-      colorClasses = 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30';
+      colorClasses = 'bg-[#EFF6FF] text-[#2563EB] border-[#BFDBFE]';
     } else if (st === 'RESOLVED' || st === 'CLEARED') {
-      colorClasses = 'bg-slate-700/50 text-slate-400 border-slate-700';
+      colorClasses = 'bg-[#F8FAFC] text-[#64748B] border-[#E2E8F0]';
     }
 
     return (
       <span
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${colorClasses} ${className}`}
+        className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium border ${colorClasses} ${className}`}
       >
         {children || st}
       </span>
@@ -65,7 +71,7 @@ export const Badge: React.FC<BadgeProps> = ({
 
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 ${className}`}
+      className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0] ${className}`}
     >
       {children}
     </span>
@@ -73,4 +79,3 @@ export const Badge: React.FC<BadgeProps> = ({
 };
 
 export default Badge;
-

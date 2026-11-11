@@ -1,13 +1,37 @@
 'use client';
 
 import React from 'react';
-import { LogOut, UserCheck, Radio, Loader2 } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { 
+  LogOut, 
+  Loader2, 
+  Search, 
+  Bell, 
+  ChevronRight
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 
 export const Header: React.FC = () => {
+  const pathname = usePathname();
   const { user, role, logout } = useAuth();
   const { connectionState, lastConnectedAt } = useSocket();
+
+  const getPageTitle = (path: string): { section: string; title: string } => {
+    if (path.startsWith('/dashboard/users')) return { section: 'Administration', title: 'User Directory' };
+    if (path.startsWith('/dashboard/roles')) return { section: 'Administration', title: 'Dynamic Roles' };
+    if (path.startsWith('/dashboard/permissions')) return { section: 'Administration', title: 'Permission Matrix' };
+    if (path.startsWith('/dashboard/audit-logs')) return { section: 'Administration', title: 'Audit Trail' };
+    if (path.startsWith('/dashboard')) return { section: 'Operations', title: 'NOC Dashboard' };
+    if (path.startsWith('/map')) return { section: 'Operations', title: 'Interactive Topology Map' };
+    if (path.startsWith('/alarms')) return { section: 'Operations', title: 'Live Ingested Alarms' };
+    if (path.startsWith('/events')) return { section: 'Operations', title: 'Correlated Incidents' };
+    if (path.startsWith('/api-sources')) return { section: 'Operations', title: 'API Ingestion Sources' };
+    if (path.startsWith('/settings')) return { section: 'Administration', title: 'System Settings' };
+    return { section: 'Portal', title: 'App360 NOC' };
+  };
+
+  const { section, title } = getPageTitle(pathname);
 
   const formatTime = (date: Date | null) => {
     if (!date) return '';
@@ -15,85 +39,104 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <header className="h-16 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-30 px-8 flex items-center justify-between">
-      {/* Real-Time WebSocket Connection Status Indicator */}
+    <header className="h-16 bg-white border-b border-[#E5EAF1] sticky top-0 z-30 px-6 sm:px-8 flex items-center justify-between shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+      {/* Left: Breadcrumbs & Page Context */}
       <div className="flex items-center gap-3">
-        {connectionState === 'connected' && (
-          <div
-            title={lastConnectedAt ? `Connected since ${formatTime(lastConnectedAt)}` : 'Real-time WebSocket connected'}
-            className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium"
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-semibold">Connected</span>
-            {lastConnectedAt && (
-              <span className="text-[10px] text-emerald-400/70 border-l border-emerald-500/20 pl-2 font-mono">
-                {formatTime(lastConnectedAt)}
-              </span>
-            )}
-          </div>
-        )}
-
-        {connectionState === 'connecting' && (
-          <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium">
-            <Loader2 className="w-3 h-3 animate-spin text-amber-400" />
-            <span>Connecting...</span>
-          </div>
-        )}
-
-        {connectionState === 'reconnecting' && (
-          <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-            <span>Reconnecting...</span>
-            {lastConnectedAt && (
-              <span className="text-[10px] text-amber-400/70 border-l border-amber-500/20 pl-2 font-mono">
-                Last: {formatTime(lastConnectedAt)}
-              </span>
-            )}
-          </div>
-        )}
-
-        {connectionState === 'disconnected' && (
-          <div
-            title={lastConnectedAt ? `Last connected: ${formatTime(lastConnectedAt)}` : 'WebSocket disconnected'}
-            className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-medium"
-          >
-            <span className="w-2 h-2 rounded-full bg-rose-500" />
-            <span>Disconnected</span>
-            {lastConnectedAt && (
-              <span className="text-[10px] text-rose-400/70 border-l border-rose-500/20 pl-2 font-mono">
-                Last: {formatTime(lastConnectedAt)}
-              </span>
-            )}
-          </div>
-        )}
-
-        <div className="hidden md:flex items-center gap-1.5 text-xs text-slate-400">
-          <Radio className="w-3.5 h-3.5 text-indigo-400" />
-          <span>Socket.IO Engine</span>
+        <div className="flex items-center gap-1.5 text-xs text-[#64748B]">
+          <span className="font-medium text-[#64748B] hover:text-[#172B4D] transition-colors">{section}</span>
+          <ChevronRight className="w-3.5 h-3.5 text-[#94A3B8]" />
+          <span className="font-semibold text-[#172B4D]">{title}</span>
         </div>
       </div>
 
-      {/* Profile & Logout */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2 text-right">
-          <div>
-            <div className="text-xs font-medium text-slate-200 flex items-center gap-1.5 justify-end">
-              <UserCheck className="w-3.5 h-3.5 text-indigo-400" />
-              <span>{user?.email || 'admin@app360.internal'}</span>
+      {/* Center: Global Search Bar */}
+      <div className="hidden lg:flex items-center flex-1 max-w-md mx-8">
+        <div className="relative w-full">
+          <Search className="w-4 h-4 text-[#94A3B8] absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            readOnly
+            placeholder="Search alarms, telemetry, sites or devices... (Ctrl + K)"
+            className="w-full pl-9 pr-4 py-1.5 rounded-lg bg-[#F7F9FC] border border-[#E5EAF1] text-xs text-[#172B4D] placeholder-[#94A3B8] focus:outline-none focus:border-[#2563EB] focus:bg-white transition-all cursor-default"
+          />
+        </div>
+      </div>
+
+      {/* Right: Engine Status, Profile & Sign Out */}
+      <div className="flex items-center gap-3 sm:gap-4">
+        {/* Real-time Socket.IO Connection Pill */}
+        <div className="flex items-center">
+          {connectionState === 'connected' && (
+            <div
+              title={lastConnectedAt ? `Connected since ${formatTime(lastConnectedAt)}` : 'Real-time WebSocket connected'}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] text-[#16A36A] text-xs font-medium"
+            >
+              <span className="w-2 h-2 rounded-full bg-[#16A36A] animate-pulse" />
+              <span className="hidden sm:inline font-semibold">Live Engine</span>
+              <span className="text-[10px] text-[#059669] font-mono border-l border-[#A7F3D0] pl-1.5 hidden md:inline">
+                {lastConnectedAt ? formatTime(lastConnectedAt) : 'Connected'}
+              </span>
             </div>
-            <p className="text-[11px] text-slate-400">
-              Role: <span className="text-indigo-300 font-semibold">{role || 'ADMIN'}</span>
-            </p>
+          )}
+
+          {connectionState === 'connecting' && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FFFBEB] border border-[#FDE68A] text-[#D99A21] text-xs font-medium">
+              <Loader2 className="w-3 h-3 animate-spin text-[#D99A21]" />
+              <span>Connecting...</span>
+            </div>
+          )}
+
+          {connectionState === 'reconnecting' && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FFFBEB] border border-[#FDE68A] text-[#D99A21] text-xs font-medium">
+              <span className="w-2 h-2 rounded-full bg-[#D99A21] animate-ping" />
+              <span>Reconnecting</span>
+            </div>
+          )}
+
+          {connectionState === 'disconnected' && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FEF2F2] border border-[#FECACA] text-[#DC4545] text-xs font-medium">
+              <span className="w-2 h-2 rounded-full bg-[#DC4545]" />
+              <span>Offline</span>
+            </div>
+          )}
+        </div>
+
+        {/* Notifications Icon Button */}
+        <button
+          type="button"
+          title="NOC Notifications"
+          className="p-2 rounded-lg text-[#64748B] hover:text-[#172B4D] hover:bg-[#F1F5F9] border border-transparent hover:border-[#E5EAF1] transition-all relative"
+        >
+          <Bell className="w-4 h-4" />
+          <span className="w-2 h-2 rounded-full bg-[#2563EB] absolute top-1.5 right-1.5 ring-2 ring-white" />
+        </button>
+
+        {/* Divider */}
+        <div className="h-6 w-px bg-[#E5EAF1] hidden sm:block" />
+
+        {/* User Profile */}
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[#2563EB] font-bold text-xs flex items-center justify-center shrink-0">
+            {user?.name ? user.name.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase() || 'A'}
+          </div>
+          <div className="hidden sm:block text-left leading-tight">
+            <div className="text-xs font-semibold text-[#172B4D] max-w-[140px] truncate">
+              {user?.name || user?.email || 'Administrator'}
+            </div>
+            <div className="text-[11px] text-[#64748B] flex items-center gap-1">
+              <span className="font-medium text-[#2563EB]">{role || 'ADMIN'}</span>
+            </div>
           </div>
         </div>
 
+        {/* Sign Out Button */}
         <button
           onClick={logout}
           title="Sign Out"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 text-slate-300 border border-slate-700 transition-all"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#64748B] hover:text-[#DC4545] bg-[#F7F9FC] hover:bg-[#FEF2F2] border border-[#E5EAF1] hover:border-[#FECACA] transition-all"
         >
           <LogOut className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Sign Out</span>
+          <span className="hidden md:inline">Sign Out</span>
         </button>
       </div>
     </header>

@@ -3,8 +3,8 @@ import './globals.css';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
-  title: 'App360 – Network Monitoring & Alarm Management System',
-  description: 'Carrier-grade Network Monitoring and Alarm Management System with AIOps Alarm Correlation and Interactive Map',
+  title: 'App360 – Carrier-Grade Network Monitoring & AIOps Platform',
+  description: 'Enterprise Network Telemetry Ingestion, AIOps Alarm Correlation and Dynamic RBAC Platform',
 };
 
 export default function RootLayout({
@@ -13,8 +13,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className="min-h-screen bg-slate-950 text-slate-100 antialiased selection:bg-indigo-600 selection:text-white">
+    <html lang="en">
+      <body className="min-h-screen bg-[#F7F9FC] text-[#172B4D] antialiased selection:bg-blue-600 selection:text-white">
         <Providers>{children}</Providers>
       </body>
     </html>
