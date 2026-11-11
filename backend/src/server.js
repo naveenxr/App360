@@ -1,3 +1,4 @@
+const http = require('http');
 const app = require('./app');
 const config = require('./config/env');
 const { connectDatabase, disconnectDatabase } = require('./config/database');
@@ -6,8 +7,10 @@ const { seedUsers } = require('./utils/seedUsers');
 const { seedTopology } = require('./utils/seedTopology');
 const correlationService = require('./services/correlationService');
 const { startIngestionJob, stopIngestionJob } = require('./jobs/ingestion.job');
+const { initSocketServer, closeSocketServer } = require('./websocket/socketServer');
 
 let server;
+let httpServer;
 
 const startServer = async () => {
   try {
@@ -32,8 +35,14 @@ const startServer = async () => {
     // 6. Start periodic background ingestion scheduler
     startIngestionJob();
 
-    // 7. Start HTTP listener
-    server = app.listen(config.PORT, () => {
+    // 7. Create HTTP server instance wrapping existing Express app
+    httpServer = http.createServer(app);
+
+    // 8. Initialize Socket.IO on the existing HTTP server
+    initSocketServer(httpServer);
+
+    // 9. Start HTTP listener
+    server = httpServer.listen(config.PORT, () => {
       console.log(`=======================================================`);
       console.log(`🚀 App360 Backend running in [${config.NODE_ENV}] mode`);
       console.log(`📡 Server listening on: http://localhost:${config.PORT}`);
@@ -41,6 +50,7 @@ const startServer = async () => {
       console.log(`🔐 Auth API base: http://localhost:${config.PORT}/api/auth`);
       console.log(`📥 Ingestion API base: http://localhost:${config.PORT}/api/ingestion`);
       console.log(`🚨 Alarms API base: http://localhost:${config.PORT}/api/alarms`);
+      console.log(`🔌 WebSocket real-time engine: ws://localhost:${config.PORT}`);
       console.log(`=======================================================`);
     });
   } catch (error) {
@@ -53,6 +63,7 @@ const startServer = async () => {
 const gracefulShutdown = async (signal) => {
   console.log(`\n🛑 Received ${signal}. Gracefully shutting down App360 HTTP server...`);
   stopIngestionJob();
+  await closeSocketServer();
 
   if (server) {
     server.close(async () => {
@@ -86,4 +97,4 @@ process.on('uncaughtException', (error) => {
 
 startServer();
 
-module.exports = { app, startServer };
+module.exports = { app, startServer, httpServer };

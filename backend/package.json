@@ -11,7 +11,8 @@
     "test:phase4": "node tests/phase4.test.js",
     "test:phase5": "node tests/phase5.test.js",
     "test:phase6": "node tests/phase6.test.js",
-    "test:all": "node tests/phase2.test.js && node tests/phase3.test.js && node tests/phase4.test.js && node tests/phase5.test.js && node tests/phase6.test.js",
+    "test:phase7_1": "node tests/phase7_1.test.js",
+    "test:all": "node tests/phase2.test.js && node tests/phase3.test.js && node tests/phase4.test.js && node tests/phase5.test.js && node tests/phase6.test.js && node tests/phase7_1.test.js",
     "test": "npm run test:all"
   },
   "dependencies": {
@@ -26,9 +27,11 @@
     "mongoose": "^8.9.5",
     "morgan": "^1.10.0",
     "node-cron": "^3.0.3",
+    "socket.io": "^4.8.4",
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.1.9",
+    "socket.io-client": "^4.8.4"
   }
 }
