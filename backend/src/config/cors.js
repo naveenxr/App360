@@ -1,6 +1,6 @@
 const config = require('./env');
 
-const PRODUCTION_FRONTEND_ORIGIN = 'https://app360-frontend-ppqozcpr.onslate.in';
+const PRODUCTION_FRONTEND_ORIGIN = 'https://app360.onslate.in';
 
 const normalizeOrigin = (origin) => {
   if (!origin || typeof origin !== 'string') return '';
