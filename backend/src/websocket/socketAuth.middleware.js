@@ -84,3 +84,4 @@ const socketAuthMiddleware = async (socket, next) => {
 };
 
 module.exports = socketAuthMiddleware;
+
