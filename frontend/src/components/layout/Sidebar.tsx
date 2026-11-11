@@ -7,6 +7,7 @@ import {
   LayoutDashboard, 
   Bell, 
   Layers, 
+  MapPin, 
   Radio, 
   Settings, 
   Activity, 
@@ -20,6 +21,7 @@ export const Sidebar: React.FC = () => {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Topology Map', href: '/map', icon: MapPin },
     { name: 'Live Alarms', href: '/alarms', icon: Bell },
     { name: 'Correlated Events', href: '/events', icon: Layers },
     { name: 'API Ingestion Sources', href: '/api-sources', icon: Radio },
