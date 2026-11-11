@@ -34,3 +34,4 @@ router.post('/', requireAdmin, validate(createRoleSchema), (req, res, next) =>
 );
 
 module.exports = router;
+

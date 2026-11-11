@@ -40,3 +40,4 @@ router.patch('/:id/status', requireAdmin, validate(updateUserStatusSchema), (req
 );
 
 module.exports = router;
+

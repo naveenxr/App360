@@ -24,3 +24,4 @@ class RoleRepository extends BaseRepository {
 }
 
 module.exports = new RoleRepository();
+

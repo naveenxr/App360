@@ -3,6 +3,7 @@ const config = require('./config/env');
 const { connectDatabase, disconnectDatabase } = require('./config/database');
 const { seedRoles } = require('./utils/seedRoles');
 const bootstrapAdmin = require('./utils/bootstrapAdmin');
+const { startIngestionJob, stopIngestionJob } = require('./jobs/ingestion.job');
 
 let server;
 
@@ -17,15 +18,18 @@ const startServer = async () => {
     // 3. Bootstrap initial system administrator from environment variables
     await bootstrapAdmin();
 
-    // 4. Start HTTP listener
+    // 4. Start periodic background ingestion scheduler
+    startIngestionJob();
+
+    // 5. Start HTTP listener
     server = app.listen(config.PORT, () => {
       console.log(`=======================================================`);
       console.log(`🚀 App360 Backend running in [${config.NODE_ENV}] mode`);
       console.log(`📡 Server listening on: http://localhost:${config.PORT}`);
       console.log(`🏥 Health check endpoint: http://localhost:${config.PORT}/api/health`);
       console.log(`🔐 Auth API base: http://localhost:${config.PORT}/api/auth`);
-      console.log(`👥 Users API base: http://localhost:${config.PORT}/api/users`);
-      console.log(`🛡️ Roles API base: http://localhost:${config.PORT}/api/roles`);
+      console.log(`📥 Ingestion API base: http://localhost:${config.PORT}/api/ingestion`);
+      console.log(`🚨 Alarms API base: http://localhost:${config.PORT}/api/alarms`);
       console.log(`=======================================================`);
     });
   } catch (error) {
@@ -37,6 +41,8 @@ const startServer = async () => {
 // Graceful shutdown handling
 const gracefulShutdown = async (signal) => {
   console.log(`\n🛑 Received ${signal}. Gracefully shutting down App360 HTTP server...`);
+  stopIngestionJob();
+
   if (server) {
     server.close(async () => {
       console.log('✅ App360 HTTP server closed successfully.');

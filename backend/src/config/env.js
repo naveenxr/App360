@@ -20,7 +20,12 @@ const envSchema = z.object({
   RATE_LIMIT_MAX: z.string().default('1000').transform((val) => parseInt(val, 10)),
   ADMIN_EMAIL: z.string().default('admin@app360.internal'),
   ADMIN_PASSWORD: z.string().default('Admin@360!'),
-  ADMIN_NAME: z.string().default('System Administrator')
+  ADMIN_NAME: z.string().default('System Administrator'),
+  INGESTION_CRON: z.string().default('*/1 * * * *'),
+  INGESTION_ENABLED: z
+    .string()
+    .default('true')
+    .transform((val) => val === 'true')
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

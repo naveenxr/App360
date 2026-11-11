@@ -401,63 +401,69 @@ RawAlarmPayloadSchema.index({ ingestedAt: -1 });
 Stores normalized alarms with link back to raw payload and forward link to correlated event.
 
 ```typescript
-export type AlarmSeverity = 'CRITICAL' | 'MAJOR' | 'MINOR' | 'WARNING' | 'CLEAR';
+export type AlarmSeverity = 'CRITICAL' | 'MAJOR' | 'MINOR' | 'WARNING' | 'INFO';
 export type AlarmStatus = 'ACTIVE' | 'ACKNOWLEDGED' | 'CLEARED';
 
 export interface IAlarm extends Document {
-  alarmId: string;
-  rawPayloadId: Schema.Types.ObjectId;
   sourceId: string;
-  sourceAlarmId: string;
+  externalAlarmId: string;
   siteId: string;
   deviceId: string;
   severity: AlarmSeverity;
   alarmType: string;
-  description: string;
-  occurredAt: Date;
+  message: string;
+  timestamp: Date;
   normalizedAt: Date;
   status: AlarmStatus;
-  fingerprint: string;
+  rawPayload: Record<string, any>;
+  rawPayloadId?: Schema.Types.ObjectId;
+  ingestedAt: Date;
   repeatCount: number;
   correlatedEventId?: Schema.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
-
-export const AlarmSchema = new Schema<IAlarm>({
-  alarmId: { type: String, required: true, unique: true, index: true },
-  rawPayloadId: { type: Schema.Types.ObjectId, ref: 'RawAlarmPayload', required: true },
-  sourceId: { type: String, required: true },
-  sourceAlarmId: { type: String, required: true },
-  siteId: { type: String, required: true, uppercase: true, index: true },
-  deviceId: { type: String, required: true, uppercase: true, index: true },
-  severity: { 
-    type: String, 
-    enum: ['CRITICAL', 'MAJOR', 'MINOR', 'WARNING', 'CLEAR'], 
-    required: true,
-    index: true 
-  },
-  alarmType: { type: String, required: true, uppercase: true },
-  description: { type: String, required: true },
-  occurredAt: { type: Date, required: true, index: true },
-  normalizedAt: { type: Date, default: Date.now },
-  status: { 
-    type: String, 
-    enum: ['ACTIVE', 'ACKNOWLEDGED', 'CLEARED'], 
-    default: 'ACTIVE',
-    index: true 
-  },
-  fingerprint: { type: String, required: true, index: true },
-  repeatCount: { type: Number, default: 1 },
-  correlatedEventId: { type: Schema.Types.ObjectId, ref: 'CorrelatedEvent', default: null }
-}, { timestamps: true });
-
-// Compound Indexes for fast querying & correlation lookups
-AlarmSchema.index({ siteId: 1, deviceId: 1, occurredAt: -1 });
-AlarmSchema.index({ status: 1, severity: 1 });
-AlarmSchema.index({ fingerprint: 1, status: 1 });
-AlarmSchema.index({ correlatedEventId: 1 });
 ```
+
+Compound Indexes:
+- `{ sourceId: 1, externalAlarmId: 1 }` (**Unique** for deduplication)
+- `{ siteId: 1, deviceId: 1, timestamp: -1 }`
+- `{ status: 1, severity: 1 }`
+- `{ ingestedAt: -1 }`
+
+---
+
+### 3.7. `ingestion_logs` Collection
+Stores structured audit records for scheduled and manual ingestion cycles.
+
+```typescript
+export interface IIngestionLog extends Document {
+  batchId: string;
+  triggeredBy: 'SCHEDULER' | 'MANUAL' | 'SYSTEM';
+  triggeredByEmail?: string;
+  status: 'SUCCESS' | 'PARTIAL' | 'FAILED';
+  sources: {
+    sourceId: string;
+    status: 'SUCCESS' | 'FAILED';
+    fetchedCount: number;
+    normalizedCount: number;
+    duplicateCount: number;
+    error?: string;
+  }[];
+  totalFetched: number;
+  totalNormalized: number;
+  totalDuplicates: number;
+  totalFailed: number;
+  durationMs: number;
+  startedAt: Date;
+  completedAt: Date;
+}
+```
+
+Indexes:
+- `{ batchId: 1 }` (**Unique**)
+- `{ startedAt: -1 }`
+- `{ status: 1 }`
 
 ---
 
