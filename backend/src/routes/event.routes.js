@@ -34,3 +34,4 @@ router.post('/:id/resolve', requirePermission('alarm', 'update'), (req, res, nex
 );
 
 module.exports = router;
+

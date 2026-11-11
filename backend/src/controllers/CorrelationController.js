@@ -23,3 +23,4 @@ class CorrelationController {
 }
 
 module.exports = new CorrelationController();
+

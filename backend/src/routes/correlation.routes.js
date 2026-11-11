@@ -18,3 +18,4 @@ router.post('/process', requirePermission('alarm', 'update'), (req, res, next) =
 );
 
 module.exports = router;
+

@@ -92,3 +92,4 @@ class EventRepository extends BaseRepository {
 }
 
 module.exports = new EventRepository();
+

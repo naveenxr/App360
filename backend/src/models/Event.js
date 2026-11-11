@@ -99,3 +99,4 @@ eventSchema.index({ firstOccurredAt: -1 });
 const Event = mongoose.models.Event || mongoose.model('Event', eventSchema);
 
 module.exports = Event;
+
