@@ -1,0 +1,19 @@
+{
+  "command": "node src/server.js",
+  "build_path": "./",
+  "stack": "node20",
+  "env_variables": {
+    "NODE_ENV": "production",
+    "FRONTEND_URL": "https://app360-frontend-ppqozcpr.onslate.in",
+    "CLIENT_URL": "https://app360-frontend-ppqozcpr.onslate.in",
+    "CORS_ORIGINS": "http://localhost:3000,https://app360-frontend-ppqozcpr.onslate.in",
+    "BCRYPT_SALT_ROUNDS": "12",
+    "JWT_EXPIRES_IN": "1d",
+    "INGESTION_ENABLED": "true"
+  },
+  "memory": 512,
+  "scripts": {
+    "preserve": "npm install --omit=dev",
+    "predeploy": "npm install --omit=dev"
+  }
+}

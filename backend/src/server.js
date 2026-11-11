@@ -38,19 +38,24 @@ const startServer = async () => {
     // 7. Create HTTP server instance wrapping existing Express app
     httpServer = http.createServer(app);
 
+    httpServer.on('error', (error) => {
+      console.error('💥 HTTP server listener error:', error.message);
+      process.exit(1);
+    });
+
     // 8. Initialize Socket.IO on the existing HTTP server
     initSocketServer(httpServer);
 
-    // 9. Start HTTP listener
-    server = httpServer.listen(config.PORT, () => {
+    // 9. Start HTTP listener bound to 0.0.0.0
+    server = httpServer.listen(config.PORT, config.HOST, () => {
       console.log(`=======================================================`);
       console.log(`🚀 App360 Backend running in [${config.NODE_ENV}] mode`);
-      console.log(`📡 Server listening on: http://localhost:${config.PORT}`);
-      console.log(`🏥 Health check endpoint: http://localhost:${config.PORT}/api/health`);
-      console.log(`🔐 Auth API base: http://localhost:${config.PORT}/api/auth`);
-      console.log(`📥 Ingestion API base: http://localhost:${config.PORT}/api/ingestion`);
-      console.log(`🚨 Alarms API base: http://localhost:${config.PORT}/api/alarms`);
-      console.log(`🔌 WebSocket real-time engine: ws://localhost:${config.PORT}`);
+      console.log(`📡 Server listening on: http://${config.HOST}:${config.PORT}`);
+      console.log(`🏥 Health check endpoint: /api/health`);
+      console.log(`🔐 Auth API base: /api/auth`);
+      console.log(`📥 Ingestion API base: /api/ingestion`);
+      console.log(`🚨 Alarms API base: /api/alarms`);
+      console.log(`🔌 WebSocket real-time engine initialized on port ${config.PORT}`);
       console.log(`=======================================================`);
     });
   } catch (error) {

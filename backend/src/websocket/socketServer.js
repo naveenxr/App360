@@ -1,5 +1,5 @@
 const { Server } = require('socket.io');
-const config = require('../config/env');
+const { isOriginAllowed } = require('../config/cors');
 const socketAuthMiddleware = require('./socketAuth.middleware');
 const { setupSocketRooms } = require('./roomManager');
 const { SERVER_EVENTS, ROOMS } = require('../constants/socketEvents');
@@ -18,21 +18,13 @@ const initSocketServer = (httpServer) => {
     return io;
   }
 
-  const allowedOrigins = [
-    config.CLIENT_URL || 'http://localhost:3000',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000'
-  ];
-
   io = new Server(httpServer, {
     cors: {
       origin: (origin, callback) => {
-        // Allow requests with no origin (e.g. mobile apps, curl, server-to-server) or matching allowed origins
-        if (!origin || allowedOrigins.includes(origin)) {
-          callback(null, true);
-        } else {
-          callback(null, true); // Dev-permissive fallback for local grading
+        if (isOriginAllowed(origin)) {
+          return callback(null, true);
         }
+        return callback(new Error(`Socket origin ${origin} not allowed by CORS policy`));
       },
       methods: ['GET', 'POST'],
       credentials: true

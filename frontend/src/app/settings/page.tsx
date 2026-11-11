@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../services/api';
+import { API_BASE_URL } from '../../config/api';
 import {
   Settings,
   Shield,
@@ -109,9 +110,9 @@ export default function SettingsPage() {
               <span>Backend Connectivity</span>
             </h4>
             <div className="p-3 rounded-lg bg-slate-50 border border-[#E5EAF1] text-[11px] space-y-1.5">
-              <div className="flex justify-between">
-                <span className="text-[#64748B]">API Endpoint:</span>
-                <span className="font-mono text-[#172B4D]">http://localhost:5000/api</span>
+              <div className="flex justify-between gap-2">
+                <span className="text-[#64748B] shrink-0">API Endpoint:</span>
+                <span className="font-mono text-[#172B4D] truncate">{API_BASE_URL}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[#64748B]">Health Check:</span>

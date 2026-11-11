@@ -201,11 +201,11 @@ const DEVICES_DATA = [
  */
 async function seedTopology() {
   for (const s of SITES_DATA) {
-    await Site.findOneAndUpdate({ siteId: s.siteId }, { $set: s }, { upsert: true, new: true });
+    await Site.findOneAndUpdate({ siteId: s.siteId }, { $setOnInsert: s }, { upsert: true, new: true });
   }
 
   for (const d of DEVICES_DATA) {
-    await Device.findOneAndUpdate({ deviceId: d.deviceId }, { $set: d }, { upsert: true, new: true });
+    await Device.findOneAndUpdate({ deviceId: d.deviceId }, { $setOnInsert: d }, { upsert: true, new: true });
   }
 
   console.log(`🌐 Seeded ${SITES_DATA.length} sites and ${DEVICES_DATA.length} hardware devices`);

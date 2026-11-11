@@ -12,11 +12,19 @@ const errorHandler = require('./middleware/error.middleware');
 
 const app = express();
 
-// Security HTTP headers
-app.use(helmet());
+// Trust first reverse proxy (required behind Zoho Catalyst AppSail / load balancers)
+app.set('trust proxy', 1);
 
-// Cross-Origin Resource Sharing
+// Security HTTP headers
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' }
+  })
+);
+
+// Cross-Origin Resource Sharing & preflight handling
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // HTTP request logger
 if (config.NODE_ENV !== 'test') {

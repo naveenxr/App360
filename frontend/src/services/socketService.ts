@@ -1,10 +1,8 @@
 import { io, Socket } from 'socket.io-client';
 import { CLIENT_EVENTS } from '../constants/socketEvents';
+import { SOCKET_BASE_URL } from '../config/api';
 
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_SOCKET_URL ||
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ||
-  'http://localhost:5000';
+const BACKEND_URL = SOCKET_BASE_URL;
 
 export type SocketConnectionState = 'connected' | 'connecting' | 'disconnected' | 'reconnecting';
 
@@ -50,9 +48,16 @@ class SocketService {
     this.currentToken = token;
     this.updateState('connecting');
 
+    if (!BACKEND_URL) {
+      console.error('❌ Socket.IO backend URL is not configured (set NEXT_PUBLIC_API_URL).');
+      this.updateState('disconnected');
+      return null;
+    }
+
     try {
       this.socket = io(BACKEND_URL, {
         auth: { token },
+        withCredentials: true,
         reconnection: true,
         reconnectionAttempts: 10,
         reconnectionDelay: 1000,

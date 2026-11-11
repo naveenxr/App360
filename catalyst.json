@@ -13,12 +13,17 @@
       "run": "node src/server.js",
       "env_variables": {
         "NODE_ENV": "production",
-        "PORT": "5000",
-        "CLIENT_URL": "https://app360.catalystserverless.com",
+        "FRONTEND_URL": "https://app360-frontend-ppqozcpr.onslate.in",
+        "CLIENT_URL": "https://app360-frontend-ppqozcpr.onslate.in",
+        "CORS_ORIGINS": "http://localhost:3000,https://app360-frontend-ppqozcpr.onslate.in",
         "BCRYPT_SALT_ROUNDS": "12",
-        "JWT_EXPIRES_IN": "1d"
+        "JWT_EXPIRES_IN": "1d",
+        "INGESTION_ENABLED": "true"
       }
+    },
+    {
+      "source": "appsail-nodejs",
+      "name": "Backend"
     }
   ]
 }
-

@@ -1,8 +1,9 @@
 const BaseAdapter = require('./BaseAdapter');
 const mockSourcesService = require('../services/mockSources.service');
+const config = require('../config/env');
 
 class SourceCAdapter extends BaseAdapter {
-  constructor(endpointUrl = 'http://localhost:5000/api/mock/source-c') {
+  constructor(endpointUrl = `http://127.0.0.1:${config.PORT}/api/mock/source-c`) {
     super('SOURCE_C', endpointUrl);
   }
 

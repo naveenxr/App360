@@ -21,6 +21,11 @@ const errorHandler = (err, req, res, next) => {
     return sendError(res, 'Malformed JSON payload', 400, 'BAD_REQUEST');
   }
 
+  // Handle CORS policy rejections cleanly
+  if (typeof err.message === 'string' && err.message.includes('not allowed by CORS policy')) {
+    return sendError(res, err.message, 403, 'CORS_FORBIDDEN');
+  }
+
   // Custom App / Operational Errors
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
