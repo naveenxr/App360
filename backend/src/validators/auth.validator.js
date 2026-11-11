@@ -30,21 +30,13 @@ const actionsSchema = z.object({
 });
 
 const updatePermissionsSchema = z.object({
-  permissions: z.object({
-    alarm: actionsSchema,
-    map: actionsSchema,
-    api: actionsSchema
-  })
+  permissions: z.record(z.string(), actionsSchema)
 });
 
 const createRoleSchema = z.object({
   name: z.string().trim().min(2, 'Role name must be at least 2 characters').toUpperCase(),
   description: z.string().optional().default(''),
-  permissions: z.object({
-    alarm: actionsSchema,
-    map: actionsSchema,
-    api: actionsSchema
-  })
+  permissions: z.record(z.string(), actionsSchema).optional()
 });
 
 module.exports = {
@@ -52,7 +44,7 @@ module.exports = {
   createUserSchema,
   updateUserSchema,
   updateUserStatusSchema,
+  actionsSchema,
   updatePermissionsSchema,
   createRoleSchema
 };
-

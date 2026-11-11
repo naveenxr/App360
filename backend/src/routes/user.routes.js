@@ -14,18 +14,18 @@ const router = express.Router();
 // Apply authentication to all user routes
 router.use(authenticate);
 
+// GET /api/users - List users (Admin or users with user:read / api:read permission)
+router.get('/', requirePermission('user', 'read'), (req, res, next) =>
+  UserController.getUsers(req, res, next)
+);
+
 // POST /api/users - Create user (Admin only)
 router.post('/', requireAdmin, validate(createUserSchema), (req, res, next) =>
   UserController.createUser(req, res, next)
 );
 
-// GET /api/users - List users (Admin or users with api:read permission)
-router.get('/', requirePermission('api', 'read'), (req, res, next) =>
-  UserController.getUsers(req, res, next)
-);
-
-// GET /api/users/:id - Get user by ID (Admin or users with api:read permission)
-router.get('/:id', requirePermission('api', 'read'), (req, res, next) =>
+// GET /api/users/:id - Get user by ID (Admin or users with user:read / api:read permission)
+router.get('/:id', requirePermission('user', 'read'), (req, res, next) =>
   UserController.getUserById(req, res, next)
 );
 
@@ -40,4 +40,3 @@ router.patch('/:id/status', requireAdmin, validate(updateUserStatusSchema), (req
 );
 
 module.exports = router;
-

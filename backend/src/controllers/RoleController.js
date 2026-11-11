@@ -20,20 +20,47 @@ class RoleController {
     }
   }
 
+  async createRole(req, res, next) {
+    try {
+      const role = await RoleService.createRole(req.body, req.user, req);
+      return sendSuccess(res, role, 'Role created successfully', 201);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateRole(req, res, next) {
+    try {
+      const role = await RoleService.updateRole(req.params.id, req.body, req.user, req);
+      return sendSuccess(res, role, 'Role updated successfully', 200);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async updateRolePermissions(req, res, next) {
     try {
       const { permissions } = req.body;
-      const role = await RoleService.updateRolePermissions(req.params.id, permissions);
+      const role = await RoleService.updateRolePermissions(req.params.id, permissions, req.user, req);
       return sendSuccess(res, role, 'Role permissions updated successfully', 200);
     } catch (error) {
       next(error);
     }
   }
 
-  async createRole(req, res, next) {
+  async deleteRole(req, res, next) {
     try {
-      const role = await RoleService.createRole(req.body);
-      return sendSuccess(res, role, 'Role created successfully', 201);
+      const result = await RoleService.deleteRole(req.params.id, req.user, req);
+      return sendSuccess(res, result, 'Role deleted successfully', 200);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getPermissionsMatrix(req, res, next) {
+    try {
+      const matrix = await RoleService.getPermissionsMatrix();
+      return sendSuccess(res, matrix, 'Permissions matrix retrieved successfully', 200);
     } catch (error) {
       next(error);
     }
@@ -41,4 +68,3 @@ class RoleController {
 }
 
 module.exports = new RoleController();
-

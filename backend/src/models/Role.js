@@ -12,7 +12,15 @@ const actionPermissionsSchema = new mongoose.Schema(
 
 const modulePermissionsSchema = new mongoose.Schema(
   {
+    dashboard: {
+      type: actionPermissionsSchema,
+      default: () => ({ read: false, create: false, update: false, delete: false })
+    },
     alarm: {
+      type: actionPermissionsSchema,
+      default: () => ({ read: false, create: false, update: false, delete: false })
+    },
+    event: {
       type: actionPermissionsSchema,
       default: () => ({ read: false, create: false, update: false, delete: false })
     },
@@ -23,9 +31,25 @@ const modulePermissionsSchema = new mongoose.Schema(
     api: {
       type: actionPermissionsSchema,
       default: () => ({ read: false, create: false, update: false, delete: false })
+    },
+    user: {
+      type: actionPermissionsSchema,
+      default: () => ({ read: false, create: false, update: false, delete: false })
+    },
+    role: {
+      type: actionPermissionsSchema,
+      default: () => ({ read: false, create: false, update: false, delete: false })
+    },
+    settings: {
+      type: actionPermissionsSchema,
+      default: () => ({ read: false, create: false, update: false, delete: false })
+    },
+    audit: {
+      type: actionPermissionsSchema,
+      default: () => ({ read: false, create: false, update: false, delete: false })
     }
   },
-  { _id: false }
+  { _id: false, strict: false }
 );
 
 const roleSchema = new mongoose.Schema(
@@ -45,9 +69,15 @@ const roleSchema = new mongoose.Schema(
       type: modulePermissionsSchema,
       required: true,
       default: () => ({
+        dashboard: { read: false, create: false, update: false, delete: false },
         alarm: { read: false, create: false, update: false, delete: false },
+        event: { read: false, create: false, update: false, delete: false },
         map: { read: false, create: false, update: false, delete: false },
-        api: { read: false, create: false, update: false, delete: false }
+        api: { read: false, create: false, update: false, delete: false },
+        user: { read: false, create: false, update: false, delete: false },
+        role: { read: false, create: false, update: false, delete: false },
+        settings: { read: false, create: false, update: false, delete: false },
+        audit: { read: false, create: false, update: false, delete: false }
       })
     },
     isSystemRole: {

@@ -6,7 +6,7 @@ const RoleRepository = require('../repositories/RoleRepository');
  * Dynamically evaluates database-stored role permissions at request time.
  * Changes made to role permissions take effect immediately without server restart.
  * 
- * @param {'alarm' | 'map' | 'api'} module - System module name
+ * @param {string} module - System module name (dashboard, alarm, event, map, api, user, role, settings, audit)
  * @param {'read' | 'create' | 'update' | 'delete'} action - Permission action
  */
 const requirePermission = (module, action) => {
@@ -52,7 +52,12 @@ const requirePermission = (module, action) => {
 
       // Check dynamic module permissions
       const modulePermissions = role.permissions?.[module];
-      const hasPermission = Boolean(modulePermissions?.[action]);
+      let hasPermission = Boolean(modulePermissions?.[action]);
+
+      // Fallback compatibility for user/role modules to api permissions
+      if (!hasPermission && (module === 'user' || module === 'role')) {
+        hasPermission = Boolean(role.permissions?.api?.[action]);
+      }
 
       if (!hasPermission) {
         return sendError(
@@ -104,4 +109,3 @@ module.exports = {
   requirePermission,
   requireAdmin
 };
-
