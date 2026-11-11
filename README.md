@@ -70,3 +70,4 @@ A production-grade, enterprise-ready take-home application aligned with the **Ap
    - Leaflet map integration, severity markers (green/yellow/red), node detail drawer, correlated alarm feeds, raw alarm inspection drawer.
 9. **Phase 8: End-to-End Integration, Demo Seeding & Zoho Catalyst Packaging**
    - Comprehensive seed dataset, automated tests, full verification, Zoho Catalyst configuration (`catalyst.json`), and architecture presentation documentation.
+
