@@ -67,7 +67,8 @@ export default function AlarmsPage() {
     setIsLoadingRaw(true);
     setSelectedRaw(null);
     try {
-      const rawRes = await alarmService.getRawPayload(alarm.id);
+      const alarmId = alarm.id || (alarm as unknown as { _id?: string })._id || '';
+      const rawRes = await alarmService.getRawPayload(alarmId);
       setSelectedRaw(rawRes.rawPayload || (alarm.rawPayload as Record<string, unknown>));
     } catch {
       setSelectedRaw(alarm.rawPayload || { note: 'Raw payload fetched from memory record' });

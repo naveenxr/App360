@@ -85,8 +85,9 @@ export default function EventsPage() {
   const handleOpenDrillDown = async (event: CorrelatedEvent) => {
     setIsLoadingAlarms(true);
     setSelectedEventAlarms(null);
+    const eventId = event.id || (event as unknown as { _id?: string })._id || event.eventId || '';
     try {
-      const data = await eventService.getEventAlarms(event.id);
+      const data = await eventService.getEventAlarms(eventId);
       setSelectedEventAlarms(data);
     } catch (e) {
       console.error('Failed to load constituent alarms:', e);
@@ -106,11 +107,12 @@ export default function EventsPage() {
     if (!targetEvent || !activeActionModal) return;
     setIsSubmittingAction(true);
     setActionError(null);
+    const eventId = targetEvent.id || (targetEvent as unknown as { _id?: string })._id || '';
     try {
       if (activeActionModal === 'ACK') {
-        await eventService.acknowledgeEvent(targetEvent.id, actionNotes);
+        await eventService.acknowledgeEvent(eventId, actionNotes);
       } else {
-        await eventService.resolveEvent(targetEvent.id, actionNotes);
+        await eventService.resolveEvent(eventId, actionNotes);
       }
       setActiveActionModal(null);
       setTargetEvent(null);
@@ -129,8 +131,9 @@ export default function EventsPage() {
     setRawTitle(`Raw Payload - ${alarm.externalAlarmId} (${alarm.sourceId})`);
     setIsLoadingRaw(true);
     setSelectedRaw(null);
+    const alarmId = alarm.id || (alarm as unknown as { _id?: string })._id || '';
     try {
-      const rawDoc = await alarmService.getRawPayload(alarm.id);
+      const rawDoc = await alarmService.getRawPayload(alarmId);
       setSelectedRaw(rawDoc.rawPayload || (alarm.rawPayload as Record<string, unknown>));
     } catch {
       setSelectedRaw(alarm.rawPayload || { note: 'Wire format from memory snapshot' });

@@ -14,6 +14,10 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const showDevCredentials =
+    process.env.NODE_ENV !== 'production' ||
+    process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === 'true';
+
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
       router.replace('/dashboard');
@@ -125,36 +129,38 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Quick Demo Credentials */}
-          <div className="mt-8 pt-6 border-t border-slate-800">
-            <div className="flex items-center gap-1 text-[11px] font-medium text-slate-400 mb-2.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Quick Test Credentials:</span>
+          {/* Quick Demo Credentials for Dev & Evaluation */}
+          {showDevCredentials && (
+            <div className="mt-8 pt-6 border-t border-slate-800">
+              <div className="flex items-center gap-1 text-[11px] font-medium text-slate-400 mb-2.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Dev / Evaluation Profiles:</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => handleQuickLogin('admin@app360.internal', 'Admin@360!')}
+                  className="py-1.5 px-2 rounded bg-slate-800 hover:bg-slate-700/80 text-slate-300 text-center border border-slate-700 transition-colors"
+                >
+                  ADMIN
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickLogin('engineer.test@app360.internal', 'Password123!')}
+                  className="py-1.5 px-2 rounded bg-slate-800 hover:bg-slate-700/80 text-slate-300 text-center border border-slate-700 transition-colors"
+                >
+                  ENGINEER
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickLogin('viewer.test@app360.internal', 'Password123!')}
+                  className="py-1.5 px-2 rounded bg-slate-800 hover:bg-slate-700/80 text-slate-300 text-center border border-slate-700 transition-colors"
+                >
+                  VIEWER
+                </button>
+              </div>
             </div>
-            <div className="grid grid-cols-3 gap-2 text-[11px]">
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('admin@app360.internal', 'Admin@360!')}
-                className="py-1.5 px-2 rounded bg-slate-800 hover:bg-slate-700/80 text-slate-300 text-center border border-slate-700 transition-colors"
-              >
-                ADMIN
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('engineer.test@app360.internal', 'Password123!')}
-                className="py-1.5 px-2 rounded bg-slate-800 hover:bg-slate-700/80 text-slate-300 text-center border border-slate-700 transition-colors"
-              >
-                ENGINEER
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('viewer.test@app360.internal', 'Password123!')}
-                className="py-1.5 px-2 rounded bg-slate-800 hover:bg-slate-700/80 text-slate-300 text-center border border-slate-700 transition-colors"
-              >
-                VIEWER
-              </button>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Footer */}
