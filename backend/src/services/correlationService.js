@@ -1,6 +1,10 @@
 const crypto = require('crypto');
 const EventRepository = require('../repositories/EventRepository');
 const AlarmRepository = require('../repositories/AlarmRepository');
+const {
+  broadcastIncidentCreated,
+  broadcastIncidentUpdated
+} = require('../websocket/socketBroadcaster');
 
 /**
  * AIOps Rule-Based Alarm Correlation Service
@@ -128,6 +132,8 @@ class CorrelationService {
         await AlarmRepository.update(alarmId, { correlatedEventId: newEvent._id });
       }
 
+      broadcastIncidentCreated(newEvent);
+
       return {
         action: 'CREATED',
         event: newEvent
@@ -161,6 +167,8 @@ class CorrelationService {
       if (alarmId) {
         await AlarmRepository.update(alarmId, { correlatedEventId: targetEvent._id });
       }
+
+      broadcastIncidentUpdated(targetEvent);
 
       return {
         action: 'UPDATED',
@@ -225,6 +233,8 @@ class CorrelationService {
         await EventRepository.model.deleteMany({ _id: { $in: secondaryIds } });
       }
 
+      broadcastIncidentUpdated(primaryEvent);
+
       return {
         action: 'MERGED',
         event: primaryEvent
@@ -268,6 +278,8 @@ class CorrelationService {
     if (alarmId) {
       await AlarmRepository.update(alarmId, { correlatedEventId: bestCandidate._id });
     }
+
+    broadcastIncidentUpdated(bestCandidate);
 
     return {
       action: 'UPDATED',

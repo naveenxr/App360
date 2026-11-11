@@ -6,6 +6,8 @@ import { Alarm, SeverityLevel } from '../../types/alarm';
 import Badge from '../../components/common/Badge';
 import Modal from '../../components/common/Modal';
 import EmptyState from '../../components/common/EmptyState';
+import { useSocket } from '../../context/SocketContext';
+import { SERVER_EVENTS, ROOMS } from '../../constants/socketEvents';
 import { 
   Bell, 
   Search, 
@@ -13,16 +15,22 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Loader2, 
-  RefreshCw 
+  RefreshCw,
+  Radio
 } from 'lucide-react';
 
 export default function AlarmsPage() {
+  const { socket, subscribe, unsubscribe } = useSocket();
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
   const [limit] = useState(15);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Live Socket.IO Stream State
+  const [liveBanner, setLiveBanner] = useState<string | null>(null);
+  const [recentIncomingId, setRecentIncomingId] = useState<string | null>(null);
 
   // Filters
   const [severity, setSeverity] = useState<string>('');
@@ -61,6 +69,79 @@ export default function AlarmsPage() {
   useEffect(() => {
     fetchAlarms();
   }, [fetchAlarms]);
+
+  // Real-time Socket.IO Live Stream Listener
+  useEffect(() => {
+    subscribe(ROOMS.MONITORING_ALARMS);
+
+    if (!socket) return;
+
+    const handleAlarmNew = (newAlarm: Alarm) => {
+      const newAlarmId = newAlarm.id || (newAlarm as unknown as { _id?: string })._id || '';
+      
+      // Update global total counter
+      setTotal((prev) => prev + 1);
+
+      // Visual indicator toast
+      setRecentIncomingId(newAlarmId);
+      setLiveBanner(`Live Ingestion: New [${newAlarm.severity}] alarm on ${newAlarm.deviceId} (${newAlarm.externalAlarmId})`);
+      const timer = setTimeout(() => {
+        setLiveBanner(null);
+        setRecentIncomingId(null);
+      }, 4000);
+
+      // Verify if new alarm satisfies active user filters
+      const matchesSeverity = !severity || newAlarm.severity === severity;
+      const matchesStatus = !status || newAlarm.status === status;
+      const matchesSource = !sourceId || newAlarm.sourceId === sourceId;
+      const matchesSite = !siteSearch || (newAlarm.siteId && newAlarm.siteId.toUpperCase().includes(siteSearch.toUpperCase()));
+      const matchesDevice = !deviceSearch || (newAlarm.deviceId && newAlarm.deviceId.toUpperCase().includes(deviceSearch.toUpperCase()));
+
+      if (matchesSeverity && matchesStatus && matchesSource && matchesSite && matchesDevice) {
+        setAlarms((prevAlarms) => {
+          // Prevent duplicate rows
+          const exists = prevAlarms.some(
+            (a) => a.id === newAlarmId || a.externalAlarmId === newAlarm.externalAlarmId
+          );
+          if (exists) {
+            return prevAlarms.map((a) =>
+              a.id === newAlarmId || a.externalAlarmId === newAlarm.externalAlarmId
+                ? { ...a, ...newAlarm }
+                : a
+            );
+          }
+          // Prepend and sort strictly by occurrence timestamp (descending)
+          const merged = [newAlarm, ...prevAlarms].sort(
+            (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+          );
+          return page === 1 ? merged.slice(0, limit) : merged;
+        });
+      }
+
+      return () => clearTimeout(timer);
+    };
+
+    const handleAlarmUpdated = (updatedAlarm: Partial<Alarm> & { id?: string; _id?: string; externalAlarmId?: string }) => {
+      const updatedId = updatedAlarm.id || updatedAlarm._id;
+      setAlarms((prevAlarms) =>
+        prevAlarms.map((a) => {
+          const isMatch =
+            (updatedId && (a.id === updatedId || (a as unknown as { _id?: string })._id === updatedId)) ||
+            (updatedAlarm.externalAlarmId && a.externalAlarmId === updatedAlarm.externalAlarmId);
+          return isMatch ? { ...a, ...updatedAlarm } : a;
+        })
+      );
+    };
+
+    socket.on(SERVER_EVENTS.ALARM_NEW, handleAlarmNew);
+    socket.on(SERVER_EVENTS.ALARM_UPDATED, handleAlarmUpdated);
+
+    return () => {
+      socket.off(SERVER_EVENTS.ALARM_NEW, handleAlarmNew);
+      socket.off(SERVER_EVENTS.ALARM_UPDATED, handleAlarmUpdated);
+      unsubscribe(ROOMS.MONITORING_ALARMS);
+    };
+  }, [socket, subscribe, unsubscribe, severity, status, sourceId, siteSearch, deviceSearch, page, limit]);
 
   const handleViewRaw = async (alarm: Alarm) => {
     setModalTitle(`Raw Wire Audit Payload: ${alarm.externalAlarmId} [${alarm.sourceId}]`);
@@ -109,6 +190,19 @@ export default function AlarmsPage() {
           <span>Refresh</span>
         </button>
       </div>
+
+      {/* Live Ingestion Real-Time Notification Banner */}
+      {liveBanner && (
+        <div className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-indigo-950/60 border border-indigo-500/40 text-indigo-300 text-xs shadow-lg animate-pulse">
+          <div className="flex items-center gap-2.5">
+            <Radio className="w-4 h-4 text-emerald-400 animate-spin" />
+            <span className="font-medium text-slate-100">{liveBanner}</span>
+          </div>
+          <span className="text-[10px] font-mono tracking-wider px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+            SOCKET.IO BROADCAST
+          </span>
+        </div>
+      )}
 
       {/* Filter Toolbar */}
       <div className="p-4 rounded-xl border border-slate-800 bg-slate-900 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
@@ -244,8 +338,21 @@ export default function AlarmsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 font-mono text-slate-300">
-                {alarms.map((alarm) => (
-                  <tr key={alarm.id} className="hover:bg-slate-800/40 transition-colors">
+                {alarms.map((alarm) => {
+                  const isNewArrival =
+                    recentIncomingId &&
+                    (alarm.id === recentIncomingId ||
+                      (alarm as unknown as { _id?: string })._id === recentIncomingId);
+
+                  return (
+                    <tr
+                      key={alarm.id}
+                      className={`transition-colors ${
+                        isNewArrival
+                          ? 'bg-indigo-900/40 border-l-2 border-indigo-400 animate-pulse'
+                          : 'hover:bg-slate-800/40'
+                      }`}
+                    >
                     <td className="py-2.5 px-4 font-sans">
                       <Badge variant="severity" severity={alarm.severity as SeverityLevel} />
                     </td>
@@ -292,7 +399,8 @@ export default function AlarmsPage() {
                       </button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -9,6 +9,8 @@ import Badge from '../../components/common/Badge';
 import Modal from '../../components/common/Modal';
 import EmptyState from '../../components/common/EmptyState';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
+import { SERVER_EVENTS, ROOMS } from '../../constants/socketEvents';
 import {
   Layers,
   Search,
@@ -21,11 +23,13 @@ import {
   RefreshCw,
   AlertTriangle,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Radio
 } from 'lucide-react';
 
 export default function EventsPage() {
   const { hasPermission } = useAuth();
+  const { socket, subscribe, unsubscribe } = useSocket();
   const canUpdateEvents = hasPermission('alarm', 'update');
 
   const [events, setEvents] = useState<CorrelatedEvent[]>([]);
@@ -34,6 +38,10 @@ export default function EventsPage() {
   const [page, setPage] = useState(1);
   const [limit] = useState(15);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Live Socket.IO Stream State
+  const [liveBanner, setLiveBanner] = useState<string | null>(null);
+  const [recentIncidentId, setRecentIncidentId] = useState<string | null>(null);
 
   // Filters
   const [severity, setSeverity] = useState<string>('');
@@ -81,6 +89,78 @@ export default function EventsPage() {
   useEffect(() => {
     fetchEvents();
   }, [fetchEvents]);
+
+  // Real-time Socket.IO Live Stream Listener for Incidents
+  useEffect(() => {
+    subscribe(ROOMS.MONITORING_EVENTS);
+
+    if (!socket) return;
+
+    const handleIncidentCreated = (newEvent: CorrelatedEvent) => {
+      const eventUniqueId = newEvent.id || (newEvent as unknown as { _id?: string })._id || newEvent.eventId;
+
+      setTotal((prev) => prev + 1);
+      setRecentIncidentId(eventUniqueId);
+      setLiveBanner(`Correlated Incident Created: [${newEvent.severity}] on ${newEvent.deviceId} (${newEvent.eventId})`);
+      const timer = setTimeout(() => {
+        setLiveBanner(null);
+        setRecentIncidentId(null);
+      }, 4500);
+
+      const matchesSeverity = !severity || newEvent.severity === severity;
+      const matchesStatus = !status || newEvent.status === status;
+      const matchesSite = !siteSearch || (newEvent.siteId && newEvent.siteId.toUpperCase().includes(siteSearch.toUpperCase()));
+      const matchesDevice = !deviceSearch || (newEvent.deviceId && newEvent.deviceId.toUpperCase().includes(deviceSearch.toUpperCase()));
+
+      if (matchesSeverity && matchesStatus && matchesSite && matchesDevice) {
+        setEvents((prevEvents) => {
+          const exists = prevEvents.some((e) => e.id === eventUniqueId || e.eventId === newEvent.eventId);
+          if (exists) {
+            return prevEvents.map((e) =>
+              e.id === eventUniqueId || e.eventId === newEvent.eventId ? { ...e, ...newEvent } : e
+            );
+          }
+          const merged = [newEvent, ...prevEvents].sort(
+            (a, b) => new Date(b.lastOccurredAt).getTime() - new Date(a.lastOccurredAt).getTime()
+          );
+          return page === 1 ? merged.slice(0, limit) : merged;
+        });
+      }
+
+      return () => clearTimeout(timer);
+    };
+
+    const handleIncidentUpdated = (updatedEvent: Partial<CorrelatedEvent> & { id?: string; _id?: string; eventId?: string }) => {
+      const updatedId = updatedEvent.id || updatedEvent._id;
+
+      setEvents((prevEvents) =>
+        prevEvents.map((e) => {
+          const isMatch =
+            (updatedId && (e.id === updatedId || (e as unknown as { _id?: string })._id === updatedId)) ||
+            (updatedEvent.eventId && e.eventId === updatedEvent.eventId);
+          return isMatch ? { ...e, ...updatedEvent } : e;
+        })
+      );
+
+      // If active targetEvent in action modal is being modified, synchronize it
+      setTargetEvent((prev) => {
+        if (!prev) return null;
+        const isMatch =
+          (updatedId && (prev.id === updatedId || (prev as unknown as { _id?: string })._id === updatedId)) ||
+          (updatedEvent.eventId && prev.eventId === updatedEvent.eventId);
+        return isMatch ? { ...prev, ...updatedEvent } : prev;
+      });
+    };
+
+    socket.on(SERVER_EVENTS.INCIDENT_CREATED, handleIncidentCreated);
+    socket.on(SERVER_EVENTS.INCIDENT_UPDATED, handleIncidentUpdated);
+
+    return () => {
+      socket.off(SERVER_EVENTS.INCIDENT_CREATED, handleIncidentCreated);
+      socket.off(SERVER_EVENTS.INCIDENT_UPDATED, handleIncidentUpdated);
+      unsubscribe(ROOMS.MONITORING_EVENTS);
+    };
+  }, [socket, subscribe, unsubscribe, severity, status, siteSearch, deviceSearch, page, limit]);
 
   const handleOpenDrillDown = async (event: CorrelatedEvent) => {
     setIsLoadingAlarms(true);
@@ -173,6 +253,19 @@ export default function EventsPage() {
           <span>Refresh</span>
         </button>
       </div>
+
+      {/* Live Correlated Event Real-Time Banner */}
+      {liveBanner && (
+        <div className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-indigo-950/60 border border-indigo-500/40 text-indigo-300 text-xs shadow-lg animate-pulse">
+          <div className="flex items-center gap-2.5">
+            <Radio className="w-4 h-4 text-emerald-400 animate-spin" />
+            <span className="font-medium text-slate-100">{liveBanner}</span>
+          </div>
+          <span className="text-[10px] font-mono tracking-wider px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+            AIOPS CORRELATION STREAM
+          </span>
+        </div>
+      )}
 
       {/* Filter Toolbar */}
       <div className="p-4 rounded-xl border border-slate-800 bg-slate-900 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
@@ -281,74 +374,89 @@ export default function EventsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 font-mono text-slate-300">
-                {events.map((event) => (
-                  <tr key={event.id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3 px-4 font-sans">
-                      <Badge variant="severity" severity={event.severity as SeverityLevel} />
-                    </td>
-                    <td className="py-3 px-4 font-semibold text-slate-100">
-                      {event.eventId}
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="text-indigo-400 font-semibold">{event.siteId}</span>
-                      <span className="text-slate-600 mx-1.5">/</span>
-                      <span className="text-slate-200">{event.deviceId}</span>
-                    </td>
-                    <td className="py-3 px-4 font-sans text-slate-400 text-[11px]">
-                      {event.correlationRule}
-                    </td>
-                    <td className="py-3 px-4 font-sans text-slate-300">
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-slate-500" />
-                        <span>{formatSpan(event.firstOccurredAt, event.lastOccurredAt)}</span>
-                        <span className="text-[10px] text-slate-500">(&le; 5m)</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 font-sans">
-                      <button
-                        onClick={() => handleOpenDrillDown(event)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/20 transition-colors"
-                      >
-                        <Layers className="w-3 h-3" />
-                        <span>{event.alarmIds?.length || 0} Alarms</span>
-                      </button>
-                    </td>
-                    <td className="py-3 px-4 font-sans">
-                      <Badge variant="status" status={event.status} />
-                    </td>
-                    <td className="py-3 px-4 text-right font-sans">
-                      <div className="flex items-center justify-end gap-1.5">
+                {events.map((event) => {
+                  const isNewArrival =
+                    recentIncidentId &&
+                    (event.id === recentIncidentId ||
+                      (event as unknown as { _id?: string })._id === recentIncidentId ||
+                      event.eventId === recentIncidentId);
+
+                  return (
+                    <tr
+                      key={event.id}
+                      className={`transition-colors ${
+                        isNewArrival
+                          ? 'bg-indigo-900/40 border-l-2 border-indigo-400 animate-pulse'
+                          : 'hover:bg-slate-800/40'
+                      }`}
+                    >
+                      <td className="py-3 px-4 font-sans">
+                        <Badge variant="severity" severity={event.severity as SeverityLevel} />
+                      </td>
+                      <td className="py-3 px-4 font-semibold text-slate-100">
+                        {event.eventId}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="text-indigo-400 font-semibold">{event.siteId}</span>
+                        <span className="text-slate-600 mx-1.5">/</span>
+                        <span className="text-slate-200">{event.deviceId}</span>
+                      </td>
+                      <td className="py-3 px-4 font-sans text-slate-400 text-[11px]">
+                        {event.correlationRule}
+                      </td>
+                      <td className="py-3 px-4 font-sans text-slate-300">
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-slate-500" />
+                          <span>{formatSpan(event.firstOccurredAt, event.lastOccurredAt)}</span>
+                          <span className="text-[10px] text-slate-500">(&le; 5m)</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 font-sans">
                         <button
                           onClick={() => handleOpenDrillDown(event)}
-                          title="View Constituent Alarms & Drill-down"
-                          className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/20 transition-colors"
                         >
-                          <Eye className="w-3.5 h-3.5" />
+                          <Layers className="w-3 h-3" />
+                          <span>{event.alarmIds?.length || 0} Alarms</span>
                         </button>
-
-                        {event.status === 'OPEN' && canUpdateEvents && (
+                      </td>
+                      <td className="py-3 px-4 font-sans">
+                        <Badge variant="status" status={event.status} />
+                      </td>
+                      <td className="py-3 px-4 text-right font-sans">
+                        <div className="flex items-center justify-end gap-1.5">
                           <button
-                            onClick={() => handleOpenActionModal(event, 'ACK')}
-                            title="Acknowledge Incident"
-                            className="p-1.5 rounded bg-slate-800 hover:bg-indigo-600/20 hover:text-indigo-400 text-slate-300 border border-slate-700 transition-colors"
+                            onClick={() => handleOpenDrillDown(event)}
+                            title="View Constituent Alarms & Drill-down"
+                            className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
                           >
-                            <Check className="w-3.5 h-3.5" />
+                            <Eye className="w-3.5 h-3.5" />
                           </button>
-                        )}
 
-                        {event.status !== 'RESOLVED' && canUpdateEvents && (
-                          <button
-                            onClick={() => handleOpenActionModal(event, 'RESOLVE')}
-                            title="Resolve Incident & Clear Alarms"
-                            className="p-1.5 rounded bg-slate-800 hover:bg-emerald-600/20 hover:text-emerald-400 text-slate-300 border border-slate-700 transition-colors"
-                          >
-                            <CheckCircle className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {event.status === 'OPEN' && canUpdateEvents && (
+                            <button
+                              onClick={() => handleOpenActionModal(event, 'ACK')}
+                              title="Acknowledge Incident"
+                              className="p-1.5 rounded bg-slate-800 hover:bg-indigo-600/20 hover:text-indigo-400 text-slate-300 border border-slate-700 transition-colors"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+
+                          {event.status !== 'RESOLVED' && canUpdateEvents && (
+                            <button
+                              onClick={() => handleOpenActionModal(event, 'RESOLVE')}
+                              title="Resolve Incident & Clear Alarms"
+                              className="p-1.5 rounded bg-slate-800 hover:bg-emerald-600/20 hover:text-emerald-400 text-slate-300 border border-slate-700 transition-colors"
+                            >
+                              <CheckCircle className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

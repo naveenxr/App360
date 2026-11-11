@@ -6,9 +6,12 @@ import MapFilterBar from '../../components/map/MapFilterBar';
 import topologyService from '../../services/topologyService';
 import alarmService from '../../services/alarmService';
 import { Site, NodeLiveAlarmsResponse, TopologySummary } from '../../types/topology';
-import { Alarm } from '../../types/alarm';
+import { Alarm, SeverityLevel } from '../../types/alarm';
+import { CorrelatedEvent } from '../../types/event';
 import Badge from '../../components/common/Badge';
 import Modal from '../../components/common/Modal';
+import { useSocket } from '../../context/SocketContext';
+import { SERVER_EVENTS, ROOMS } from '../../constants/socketEvents';
 import {
   MapPin,
   Activity,
@@ -31,7 +34,17 @@ const NetworkMap = dynamic(() => import('../../components/map/NetworkMap'), {
   )
 });
 
+const SEVERITY_RANK: Record<string, number> = {
+  CRITICAL: 5,
+  MAJOR: 4,
+  MINOR: 3,
+  WARNING: 2,
+  INFO: 1,
+  CLEAR: 0
+};
+
 export default function MapPage() {
+  const { socket, subscribe, unsubscribe } = useSocket();
   const [sites, setSites] = useState<Site[]>([]);
   const [summary, setSummary] = useState<TopologySummary | null>(null);
   const [selectedSite, setSelectedSite] = useState<Site | null>(null);
@@ -75,6 +88,146 @@ export default function MapPage() {
   useEffect(() => {
     fetchTopologyData();
   }, [fetchTopologyData]);
+
+  // Real-time Dynamic Topology Updates
+  useEffect(() => {
+    subscribe(ROOMS.MONITORING_ALARMS);
+    subscribe(ROOMS.MONITORING_TOPOLOGY);
+    subscribe(ROOMS.MONITORING_EVENTS);
+
+    if (!socket) return;
+
+    const handleAlarmNew = (alarm: Alarm) => {
+      const siteUpper = alarm.siteId?.toUpperCase();
+      const deviceUpper = alarm.deviceId?.toUpperCase();
+
+      // 1. Update affected site marker without reloading full map
+      setSites((prevSites) =>
+        prevSites.map((s) => {
+          if (s.siteId.toUpperCase() === siteUpper) {
+            const nextAlarmCount = (s.activeAlarmCount || 0) + 1;
+            const currentRank = SEVERITY_RANK[s.currentSeverity] || 0;
+            const incomingRank = SEVERITY_RANK[alarm.severity] || 0;
+            const nextSeverity = incomingRank > currentRank ? (alarm.severity as SeverityLevel) : s.currentSeverity;
+
+            return {
+              ...s,
+              activeAlarmCount: nextAlarmCount,
+              currentSeverity: nextSeverity
+            };
+          }
+          return s;
+        })
+      );
+
+      // 2. Synchronize selected site if open
+      setSelectedSite((prev) => {
+        if (!prev || prev.siteId.toUpperCase() !== siteUpper) return prev;
+        const currentRank = SEVERITY_RANK[prev.currentSeverity] || 0;
+        const incomingRank = SEVERITY_RANK[alarm.severity] || 0;
+        return {
+          ...prev,
+          activeAlarmCount: (prev.activeAlarmCount || 0) + 1,
+          currentSeverity: incomingRank > currentRank ? (alarm.severity as SeverityLevel) : prev.currentSeverity
+        };
+      });
+
+      // 3. Update inspected node drawer if the affected device is currently open
+      setInspectedNode((prev) => {
+        if (!prev || prev.node.deviceId.toUpperCase() !== deviceUpper) return prev;
+        const exists = prev.activeAlarms.some(
+          (a) => a.id === alarm.id || a.externalAlarmId === alarm.externalAlarmId
+        );
+        const updatedAlarms = exists ? prev.activeAlarms : [alarm, ...prev.activeAlarms];
+        const currentRank = SEVERITY_RANK[prev.node.currentSeverity] || 0;
+        const incomingRank = SEVERITY_RANK[alarm.severity] || 0;
+
+        return {
+          ...prev,
+          activeAlarmCount: updatedAlarms.length,
+          activeAlarms: updatedAlarms,
+          node: {
+            ...prev.node,
+            currentSeverity: incomingRank > currentRank ? (alarm.severity as SeverityLevel) : prev.node.currentSeverity
+          }
+        };
+      });
+
+      // 4. Update topology summary counters
+      setSummary((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          activeAlarms: prev.activeAlarms + 1
+        };
+      });
+    };
+
+    const handleAlarmUpdated = (updatedAlarm: Partial<Alarm> & { id?: string; _id?: string; siteId?: string; deviceId?: string; status?: string }) => {
+      if (updatedAlarm.status === 'CLEARED') {
+        const deviceUpper = updatedAlarm.deviceId?.toUpperCase();
+        const siteUpper = updatedAlarm.siteId?.toUpperCase();
+        const alarmId = updatedAlarm.id || updatedAlarm._id;
+
+        // Decrease active count on inspected device if open
+        setInspectedNode((prev) => {
+          if (!prev || (deviceUpper && prev.node.deviceId.toUpperCase() !== deviceUpper)) return prev;
+          const filtered = prev.activeAlarms.filter(
+            (a) => a.id !== alarmId && (a as unknown as { _id?: string })._id !== alarmId
+          );
+          return {
+            ...prev,
+            activeAlarms: filtered,
+            activeAlarmCount: filtered.length
+          };
+        });
+
+        // Decrease active alarm count on affected site
+        if (siteUpper) {
+          setSites((prevSites) =>
+            prevSites.map((s) => {
+              if (s.siteId.toUpperCase() === siteUpper) {
+                return {
+                  ...s,
+                  activeAlarmCount: Math.max(0, (s.activeAlarmCount || 0) - 1)
+                };
+              }
+              return s;
+            })
+          );
+        }
+      }
+    };
+
+    const handleIncidentEvent = (incident: { siteId?: string; deviceId?: string; status?: string }) => {
+      const deviceUpper = incident.deviceId?.toUpperCase();
+      setInspectedNode((prev) => {
+        if (!prev || (deviceUpper && prev.node.deviceId.toUpperCase() !== deviceUpper)) return prev;
+        return {
+          ...prev,
+          linkedCorrelatedEvent: {
+            ...(prev.linkedCorrelatedEvent || {}),
+            ...incident
+          } as unknown as CorrelatedEvent
+        };
+      });
+    };
+
+    socket.on(SERVER_EVENTS.ALARM_NEW, handleAlarmNew);
+    socket.on(SERVER_EVENTS.ALARM_UPDATED, handleAlarmUpdated);
+    socket.on(SERVER_EVENTS.INCIDENT_CREATED, handleIncidentEvent);
+    socket.on(SERVER_EVENTS.INCIDENT_UPDATED, handleIncidentEvent);
+
+    return () => {
+      socket.off(SERVER_EVENTS.ALARM_NEW, handleAlarmNew);
+      socket.off(SERVER_EVENTS.ALARM_UPDATED, handleAlarmUpdated);
+      socket.off(SERVER_EVENTS.INCIDENT_CREATED, handleIncidentEvent);
+      socket.off(SERVER_EVENTS.INCIDENT_UPDATED, handleIncidentEvent);
+      unsubscribe(ROOMS.MONITORING_ALARMS);
+      unsubscribe(ROOMS.MONITORING_TOPOLOGY);
+      unsubscribe(ROOMS.MONITORING_EVENTS);
+    };
+  }, [socket, subscribe, unsubscribe]);
 
   // Dynamic Marker Selection handler: immediately queries backend REST API
   const handleInspectNode = async (deviceId: string) => {

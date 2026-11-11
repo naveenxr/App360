@@ -7,6 +7,7 @@ const AlarmRepository = require('../repositories/AlarmRepository');
 const RawAlarmPayloadRepository = require('../repositories/RawAlarmPayloadRepository');
 const IngestionLogRepository = require('../repositories/IngestionLogRepository');
 const correlationService = require('./correlationService');
+const { broadcastAlarmNew } = require('../websocket/socketBroadcaster');
 
 class IngestionService {
   constructor() {
@@ -101,10 +102,16 @@ class IngestionService {
                   } else if (correlationResult.action === 'UPDATED' || correlationResult.action === 'MERGED') {
                     totalEventsUpdated += 1;
                   }
+                  if (correlationResult?.event?._id) {
+                    alarm.correlatedEventId = correlationResult.event._id;
+                  }
                 } catch (corrErr) {
                   // Do not block ingestion if correlation encounters an isolated error
                   console.error(`⚠️ Correlation error for alarm [${alarm.externalAlarmId}]:`, corrErr.message);
                 }
+
+                // 6. Broadcast newly persisted canonical alarm via Socket.IO
+                broadcastAlarmNew(alarm);
               } else {
                 sourceSummary.duplicateCount += 1;
                 totalDuplicates += 1;

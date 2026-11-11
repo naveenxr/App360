@@ -14,6 +14,7 @@ class SocketService {
   private stateChangeListeners: Set<(state: SocketConnectionState, lastConnected: Date | null) => void> = new Set();
   private currentState: SocketConnectionState = 'disconnected';
   private lastConnectedAt: Date | null = null;
+  private activeRooms: Set<string> = new Set();
 
   /**
    * Initializes or returns the existing Socket.IO connection.
@@ -77,6 +78,10 @@ class SocketService {
     this.socket.on('connect', () => {
       this.lastConnectedAt = new Date();
       this.updateState('connected');
+      // Automatically resubscribe to all active rooms on connect / reconnect
+      this.activeRooms.forEach((room) => {
+        this.socket?.emit(CLIENT_EVENTS.SUBSCRIBE, { room });
+      });
     });
 
     this.socket.on('disconnect', (reason) => {
@@ -124,6 +129,7 @@ class SocketService {
       this.socket = null;
     }
     this.currentToken = null;
+    this.activeRooms.clear();
     this.updateState('disconnected');
   }
 
@@ -131,6 +137,9 @@ class SocketService {
    * Subscribes to a validated monitoring or identity room.
    */
   public subscribe(room: string, callback?: (res: { success: boolean; error?: string; message?: string }) => void) {
+    if (room) {
+      this.activeRooms.add(room);
+    }
     if (!this.socket || !this.socket.connected) {
       if (callback) callback({ success: false, error: 'NOT_CONNECTED', message: 'Socket is not connected' });
       return;
@@ -142,6 +151,9 @@ class SocketService {
    * Unsubscribes from a room.
    */
   public unsubscribe(room: string, callback?: (res: { success: boolean; error?: string; message?: string }) => void) {
+    if (room) {
+      this.activeRooms.delete(room);
+    }
     if (!this.socket || !this.socket.connected) {
       if (callback) callback({ success: false, error: 'NOT_CONNECTED', message: 'Socket is not connected' });
       return;

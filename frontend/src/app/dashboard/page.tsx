@@ -8,9 +8,12 @@ import dashboardService from '../../services/dashboardService';
 import alarmService from '../../services/alarmService';
 import { DashboardSummary } from '../../types/dashboard';
 import { Alarm } from '../../types/alarm';
+import { useSocket } from '../../context/SocketContext';
+import { SERVER_EVENTS, ROOMS } from '../../constants/socketEvents';
 import { Bell, Layers, Sparkles, AlertTriangle, RefreshCw } from 'lucide-react';
 
 export default function DashboardPage() {
+  const { socket, subscribe, unsubscribe } = useSocket();
   const [summary, setSummary] = useState<DashboardSummary>({
     totalAlarms: 0,
     activeAlarms: 0,
@@ -49,6 +52,111 @@ export default function DashboardPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Real-time Live Dashboard Telemetry Integration
+  useEffect(() => {
+    subscribe(ROOMS.MONITORING_ALARMS);
+    subscribe(ROOMS.MONITORING_EVENTS);
+
+    if (!socket) return;
+
+    const handleAlarmNew = (newAlarm: Alarm) => {
+      setSummary((prev) => {
+        const nextTotalAlarms = prev.totalAlarms + 1;
+        const nextActiveAlarms = newAlarm.status === 'ACTIVE' ? prev.activeAlarms + 1 : prev.activeAlarms;
+        const sevKey = (newAlarm.severity || 'INFO') as keyof typeof prev.severityDistribution;
+
+        const nextSeverityDist = {
+          ...prev.severityDistribution,
+          [sevKey]: (prev.severityDistribution[sevKey] || 0) + 1
+        };
+
+        // Standardized noise reduction calculation
+        const nextNoiseReduction =
+          nextTotalAlarms > 0
+            ? Math.max(0, Math.round(((nextTotalAlarms - prev.totalEvents) / nextTotalAlarms) * 100))
+            : 0;
+
+        return {
+          ...prev,
+          totalAlarms: nextTotalAlarms,
+          activeAlarms: nextActiveAlarms,
+          severityDistribution: nextSeverityDist,
+          noiseReductionPercent: nextNoiseReduction
+        };
+      });
+
+      // Prepend to live recent alarms list if active
+      if (newAlarm.status === 'ACTIVE') {
+        const newAlarmId = newAlarm.id || (newAlarm as unknown as { _id?: string })._id;
+        setRecentAlarms((prev) => {
+          const exists = prev.some((a) => a.id === newAlarmId || a.externalAlarmId === newAlarm.externalAlarmId);
+          if (exists) {
+            return prev.map((a) =>
+              a.id === newAlarmId || a.externalAlarmId === newAlarm.externalAlarmId ? { ...a, ...newAlarm } : a
+            );
+          }
+          return [newAlarm, ...prev.slice(0, 7)];
+        });
+      }
+    };
+
+    const handleAlarmUpdated = (updatedAlarm: Partial<Alarm> & { id?: string; _id?: string; externalAlarmId?: string }) => {
+      const updatedId = updatedAlarm.id || updatedAlarm._id;
+      setRecentAlarms((prev) =>
+        prev
+          .map((a) => {
+            const matches =
+              (updatedId && (a.id === updatedId || (a as unknown as { _id?: string })._id === updatedId)) ||
+              (updatedAlarm.externalAlarmId && a.externalAlarmId === updatedAlarm.externalAlarmId);
+            return matches ? { ...a, ...updatedAlarm } : a;
+          })
+          .filter((a) => a.status !== 'CLEARED')
+      );
+    };
+
+    const handleIncidentCreated = (newEvent: { status?: string }) => {
+      setSummary((prev) => {
+        const nextTotalEvents = prev.totalEvents + 1;
+        const nextOpenEvents = newEvent.status === 'OPEN' ? prev.openEvents + 1 : prev.openEvents;
+
+        const nextNoiseReduction =
+          prev.totalAlarms > 0
+            ? Math.max(0, Math.round(((prev.totalAlarms - nextTotalEvents) / prev.totalAlarms) * 100))
+            : 0;
+
+        return {
+          ...prev,
+          totalEvents: nextTotalEvents,
+          openEvents: nextOpenEvents,
+          noiseReductionPercent: nextNoiseReduction
+        };
+      });
+    };
+
+    const handleIncidentUpdated = (updatedEvent: { status?: string }) => {
+      if (updatedEvent.status && updatedEvent.status !== 'OPEN') {
+        setSummary((prev) => ({
+          ...prev,
+          openEvents: Math.max(0, prev.openEvents - 1)
+        }));
+      }
+    };
+
+    socket.on(SERVER_EVENTS.ALARM_NEW, handleAlarmNew);
+    socket.on(SERVER_EVENTS.ALARM_UPDATED, handleAlarmUpdated);
+    socket.on(SERVER_EVENTS.INCIDENT_CREATED, handleIncidentCreated);
+    socket.on(SERVER_EVENTS.INCIDENT_UPDATED, handleIncidentUpdated);
+
+    return () => {
+      socket.off(SERVER_EVENTS.ALARM_NEW, handleAlarmNew);
+      socket.off(SERVER_EVENTS.ALARM_UPDATED, handleAlarmUpdated);
+      socket.off(SERVER_EVENTS.INCIDENT_CREATED, handleIncidentCreated);
+      socket.off(SERVER_EVENTS.INCIDENT_UPDATED, handleIncidentUpdated);
+      unsubscribe(ROOMS.MONITORING_ALARMS);
+      unsubscribe(ROOMS.MONITORING_EVENTS);
+    };
+  }, [socket, subscribe, unsubscribe]);
 
   const handleRefresh = () => {
     setIsRefreshing(true);

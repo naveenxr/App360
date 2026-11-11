@@ -1,4 +1,5 @@
 const AlarmRepository = require('../repositories/AlarmRepository');
+const { broadcastAlarmUpdated } = require('../websocket/socketBroadcaster');
 
 class AlarmService {
   async listAlarms(queryFilters = {}, options = {}) {
@@ -72,6 +73,18 @@ class AlarmService {
 
   async getAlarmStats() {
     return await AlarmRepository.getStats();
+  }
+
+  async updateAlarm(id, updateData = {}) {
+    const alarm = await AlarmRepository.update(id, updateData);
+    if (!alarm) {
+      const error = new Error(`Alarm with ID [${id}] not found`);
+      error.statusCode = 404;
+      error.code = 'NOT_FOUND';
+      throw error;
+    }
+    broadcastAlarmUpdated(alarm);
+    return alarm;
   }
 }
 

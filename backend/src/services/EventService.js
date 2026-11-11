@@ -1,6 +1,10 @@
 const EventRepository = require('../repositories/EventRepository');
 const AlarmRepository = require('../repositories/AlarmRepository');
 const correlationService = require('./correlationService');
+const {
+  broadcastIncidentUpdated,
+  broadcastAlarmUpdated
+} = require('../websocket/socketBroadcaster');
 
 class EventService {
   async listEvents(queryFilters = {}, options = {}) {
@@ -94,7 +98,9 @@ class EventService {
       event.notes = notes;
     }
 
-    return await event.save();
+    const savedEvent = await event.save();
+    broadcastIncidentUpdated(savedEvent);
+    return savedEvent;
   }
 
   async resolveEvent(id, userId, notes = '') {
@@ -119,7 +125,20 @@ class EventService {
       { $set: { status: 'CLEARED' } }
     );
 
-    return await event.save();
+    const savedEvent = await event.save();
+    broadcastIncidentUpdated(savedEvent);
+
+    // Broadcast updated alarm state for constituent alarms
+    try {
+      const updatedAlarms = await AlarmRepository.findAll({ _id: { $in: event.alarmIds } });
+      for (const alarm of updatedAlarms) {
+        broadcastAlarmUpdated(alarm);
+      }
+    } catch (alarmBroadcastErr) {
+      console.warn('⚠️ Non-fatal error broadcasting updated alarms on event resolve:', alarmBroadcastErr.message);
+    }
+
+    return savedEvent;
   }
 
   async recalculateSeverity(eventId) {
@@ -131,7 +150,9 @@ class EventService {
     });
 
     event.severity = correlationService.calculateAggregateSeverity(constituentAlarms);
-    return await event.save();
+    const savedEvent = await event.save();
+    broadcastIncidentUpdated(savedEvent);
+    return savedEvent;
   }
 
   async recalculateTimestamps(eventId) {
