@@ -1,0 +1,46 @@
+Take-Home Assignment
+Fullstack Developer (App360)
+Objective:Develop a mini application aligned with App360 architecture (Data Layer, Business Logic Layer, Presentation Layer, Agentic-ready design) that demonstrates RBAC, Alarm Correlation, Interactive Map, and API Integration.
+Architecture Requirement (STRICT- Based on App360)
+Must follow layered architecture: Data Layer, Business Logic Layer, Presentation Layer.
+Frontend (NextJS) must consume backend via API only (no direct DB access).
+Backend must separate Controller, Service, and Data Access (Repository).
+System must simulate multi-source API ingestion (REST/mock).
+Design should reflect real-time or near real-time data flow concept.
+User Story - RBAC
+As an Admin, I can create users and assign roles (Admin, Engineer, Viewer).
+As an Admin, I can configure permissions per module (Alarm, Map, API).
+As an Engineer, I can view alarms and correlated events.
+As a Viewer, I can only read dashboard without edit access.
+System must enforce RBAC in backend (API level) and reflect in frontend UI.
+System should support multi-role authorization logic (not hardcoded).
+User Story - Alarm Correlation (AIOps Concept)
+As a System, I ingest alarms from multiple sources (mock REST API).
+As a System, I normalize raw alarm data before processing.
+As a System, I correlate alarms based on rules (same site, device, time window).
+As an Engineer, I can view correlated alarms as grouped events.
+As an Engineer, I can drill-down to raw alarm details.
+Correlation must show logic maturity (rule-based reasoning, not static grouping).
+User Story - Interactive Map
+As a User, I can see network topology or sites on an interactive map.
+As a User, I can click a node to view alarm summary and details.
+As a User, I see status indicators (green/yellow/red) based on severity.
+As an Engineer, I can filter nodes by severity/region/status.
+Map interaction must trigger backend API calls dynamically.
+User Story - API Integration
+As a System, I integrate with external API (mock or public API).
+As a System, I transform/normalize external data into internal format.
+As a Backend, I provide clean API endpoints for frontend.
+As a System, I simulate streaming or periodic refresh (real-time concept).
+Architecture should reflect ingestion → processing → presentation pipeline.
+Optional Bonus - App360 Awareness
+Highlight how your design can scale to multi-source ingestion (SNMP, REST, etc.).
+Explain where AI/ML or correlation logic could evolve (future-ready thinking).
+Show awareness of telemetry / event pipeline concept (even if mocked).
+Presentation Requirement 
+Explain architecture mapped to: Data Layer, Business Logic Layer, Presentation Layer.
+Explain API ingestion  normalization  correlation  UI flow.
+Explain RBAC enforcement (backend vs frontend).
+Explain correlation logic step-by-step.
+Walkthrough project structure (folder, modules, layering).
+Live demo application and defend design decisions.
