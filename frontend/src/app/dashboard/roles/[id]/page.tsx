@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import roleService from '../../../../services/roleService';
 import { Role, RolePermissions, ActionPermissions } from '../../../../types/rbac';
 import { useAuth } from '../../../../context/AuthContext';
@@ -16,6 +17,8 @@ import {
   Save,
   Lock
 } from 'lucide-react';
+
+export const dynamic = 'force-dynamic';
 
 const MODULES_MAP: { id: string; label: string; desc: string }[] = [
   { id: 'dashboard', label: 'Command Dashboard', desc: 'Real-time telemetry KPIs, noise reduction & analytics' },
@@ -36,8 +39,9 @@ const ACTIONS = [
   { key: 'delete' as const, label: 'DELETE' }
 ];
 
-export default function RoleDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default function RoleDetailPage() {
+  const params = useParams();
+  const id = (params?.id as string) || '';
   const { role: currentUserRole } = useAuth();
   const isAdministrator = currentUserRole === 'ADMIN';
 

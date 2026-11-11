@@ -8,11 +8,7 @@ import {
   Shield,
   Server,
   CheckCircle,
-  XCircle,
-  Users,
-  KeyRound,
-  Grid3X3,
-  FileText
+  XCircle
 } from 'lucide-react';
 
 interface RoleData {
@@ -72,61 +68,6 @@ export default function SettingsPage() {
         <p className="text-xs text-slate-400">
           Operator profile, dynamic database-driven authorization matrix and NOC backend status
         </p>
-      </div>
-
-      {/* Quick Administration Hub */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <a
-          href="/dashboard/users"
-          className="p-3.5 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-indigo-500/40 transition-all flex items-center gap-3 group"
-        >
-          <div className="w-8 h-8 rounded-lg bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition-all">
-            <Users className="w-4 h-4" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-slate-200">User Directory</p>
-            <p className="text-[10px] text-slate-400">Manage operators</p>
-          </div>
-        </a>
-
-        <a
-          href="/dashboard/roles"
-          className="p-3.5 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-indigo-500/40 transition-all flex items-center gap-3 group"
-        >
-          <div className="w-8 h-8 rounded-lg bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition-all">
-            <KeyRound className="w-4 h-4" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-slate-200">Dynamic Roles</p>
-            <p className="text-[10px] text-slate-400">Role definitions</p>
-          </div>
-        </a>
-
-        <a
-          href="/dashboard/permissions"
-          className="p-3.5 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-indigo-500/40 transition-all flex items-center gap-3 group"
-        >
-          <div className="w-8 h-8 rounded-lg bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition-all">
-            <Grid3X3 className="w-4 h-4" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-slate-200">Permission Matrix</p>
-            <p className="text-[10px] text-slate-400">9-module matrix</p>
-          </div>
-        </a>
-
-        <a
-          href="/dashboard/audit-logs"
-          className="p-3.5 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-indigo-500/40 transition-all flex items-center gap-3 group"
-        >
-          <div className="w-8 h-8 rounded-lg bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition-all">
-            <FileText className="w-4 h-4" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-slate-200">Audit Trail</p>
-            <p className="text-[10px] text-slate-400">Compliance logs</p>
-          </div>
-        </a>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

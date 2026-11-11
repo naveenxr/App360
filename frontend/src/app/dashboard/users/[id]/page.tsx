@@ -2,14 +2,18 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import userService from '../../../../services/userService';
 import roleService from '../../../../services/roleService';
 import { ManagedUser, Role } from '../../../../types/rbac';
 import { useAuth } from '../../../../context/AuthContext';
 import { ArrowLeft, Loader2, AlertCircle, CheckCircle2, Power, PowerOff } from 'lucide-react';
 
-export default function EditUserPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export const dynamic = 'force-dynamic';
+
+export default function EditUserPage() {
+  const params = useParams();
+  const id = (params?.id as string) || '';
   const { role: currentUserRole } = useAuth();
   const isAdministrator = currentUserRole === 'ADMIN';
 

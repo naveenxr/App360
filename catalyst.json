@@ -1,0 +1,24 @@
+{
+  "$schema": "https://raw.githubusercontent.com/zoho/catalyst-cli/master/schemas/catalyst.schema.json",
+  "name": "app360",
+  "client": {
+    "source": "frontend/out"
+  },
+  "appsail": [
+    {
+      "name": "app360-backend",
+      "source": "backend",
+      "stack": "node20",
+      "build": "npm install",
+      "run": "node src/server.js",
+      "env_variables": {
+        "NODE_ENV": "production",
+        "PORT": "5000",
+        "CLIENT_URL": "https://app360.catalystserverless.com",
+        "BCRYPT_SALT_ROUNDS": "12",
+        "JWT_EXPIRES_IN": "1d"
+      }
+    }
+  ]
+}
+
