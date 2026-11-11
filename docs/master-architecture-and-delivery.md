@@ -509,3 +509,4 @@ App360 includes production packaging for **Zoho Catalyst**:
 6. **Incident Lifecycle:** Click **Acknowledge** (`Check`), then **Resolve** (`CheckCircle`), then **Reopen** (`RotateCcw`). Watch state transitions broadcast live to all connected windows.
 7. **Interactive Topology:** Navigate to `/map`. Inspect site severity markers (green/yellow/red). Click a node to view its active alarms.
 8. **Permission Matrix & Suganthan Operator:** Navigate to `/dashboard/permissions`. Switch view to **By Operator (Users)**. Select **Suganthan** from the operator dropdown to view their dynamic permissions.
+

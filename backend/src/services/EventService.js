@@ -270,8 +270,7 @@ class EventService {
       activeAlarms: alarmStats.activeAlarms,
       alarmSeverityCounts: alarmStats.severityCounts,
       noiseReductionRatio: `${totalAlarms}:${eventStats.totalEvents}`,
-      noiseReductionPercent: Math.max(0, noiseReductionPercent),
-      noiseReductionRate: Math.max(0, noiseReductionPercent)
+      noiseReductionPercent: Math.max(0, noiseReductionPercent)
     };
   }
 }

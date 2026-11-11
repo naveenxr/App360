@@ -26,7 +26,8 @@ import {
   ChevronRight,
   Radio,
   RotateCcw,
-  History
+  History,
+  ShieldAlert
 } from 'lucide-react';
 
 export default function EventsPage() {
@@ -55,8 +56,8 @@ export default function EventsPage() {
   const [selectedEventAlarms, setSelectedEventAlarms] = useState<RelatedAlarmsResponse | null>(null);
   const [isLoadingAlarms, setIsLoadingAlarms] = useState(false);
 
-  // Action Modals (Acknowledge / Resolve / Reopen)
-  const [activeActionModal, setActiveActionModal] = useState<'ACK' | 'RESOLVE' | 'REOPEN' | null>(null);
+  // Action Modals (Acknowledge / Resolve)
+  const [activeActionModal, setActiveActionModal] = useState<'ACK' | 'RESOLVE' | null>(null);
   const [targetEvent, setTargetEvent] = useState<CorrelatedEvent | null>(null);
   const [actionNotes, setActionNotes] = useState('');
   const [isSubmittingAction, setIsSubmittingAction] = useState(false);
@@ -178,7 +179,7 @@ export default function EventsPage() {
     }
   };
 
-  const handleOpenActionModal = (event: CorrelatedEvent, type: 'ACK' | 'RESOLVE' | 'REOPEN') => {
+  const handleOpenActionModal = (event: CorrelatedEvent, type: 'ACK' | 'RESOLVE') => {
     setTargetEvent(event);
     setActiveActionModal(type);
     setActionNotes('');
@@ -193,10 +194,8 @@ export default function EventsPage() {
     try {
       if (activeActionModal === 'ACK') {
         await eventService.acknowledgeEvent(eventId, actionNotes);
-      } else if (activeActionModal === 'RESOLVE') {
+      } else {
         await eventService.resolveEvent(eventId, actionNotes);
-      } else if (activeActionModal === 'REOPEN') {
-        await eventService.reopenEvent(eventId, actionNotes);
       }
       setActiveActionModal(null);
       setTargetEvent(null);
@@ -456,16 +455,6 @@ export default function EventsPage() {
                               <CheckCircle className="w-3.5 h-3.5" />
                             </button>
                           )}
-
-                          {event.status === 'RESOLVED' && canUpdateEvents && (
-                            <button
-                              onClick={() => handleOpenActionModal(event, 'REOPEN')}
-                              title="Reopen Incident"
-                              className="p-1.5 rounded bg-slate-800 hover:bg-amber-600/20 hover:text-amber-400 text-slate-300 border border-slate-700 transition-colors"
-                            >
-                              <RotateCcw className="w-3.5 h-3.5" />
-                            </button>
-                          )}
                         </div>
                       </td>
                     </tr>
@@ -527,51 +516,11 @@ export default function EventsPage() {
                 <span className="text-slate-400">Device: </span>
                 <span className="font-bold text-slate-200">{selectedEventAlarms.deviceId}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                  {selectedEventAlarms.correlationRule || 'SAME_SITE_DEVICE_5MIN'}
-                </span>
-                <span className="text-slate-400">Severity: </span>
+              <div>
+                <span className="text-slate-400">Aggregate Severity: </span>
                 <Badge variant="severity" severity={selectedEventAlarms.severity} />
               </div>
             </div>
-
-            {selectedEventAlarms.notes && (
-              <div className="p-3 rounded-lg bg-slate-950/80 border border-slate-800/80 text-xs">
-                <span className="text-slate-400 font-medium block mb-1">Latest Operational Notes:</span>
-                <p className="text-slate-300 italic">{selectedEventAlarms.notes}</p>
-              </div>
-            )}
-
-            {/* Lifecycle Status History Timeline */}
-            {selectedEventAlarms.statusHistory && selectedEventAlarms.statusHistory.length > 0 && (
-              <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 text-xs space-y-2">
-                <div className="flex items-center gap-1.5 text-slate-400 font-medium">
-                  <History className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Incident Lifecycle & Status Audit Trail ({selectedEventAlarms.statusHistory.length})</span>
-                </div>
-                <div className="space-y-1.5 pl-2 border-l border-slate-800">
-                  {selectedEventAlarms.statusHistory.map((item, idx) => {
-                    const author =
-                      typeof item.changedBy === 'object' && item.changedBy !== null
-                        ? item.changedBy.name || item.changedBy.email
-                        : String(item.changedBy || 'System/AIOps');
-                    return (
-                      <div key={idx} className="flex items-start justify-between gap-2 text-[11px] text-slate-300">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="status" status={item.status} />
-                          <span className="text-slate-400 font-sans">by <span className="text-slate-200 font-medium">{author}</span></span>
-                          {item.notes && <span className="text-slate-400 italic font-sans">— &quot;{item.notes}&quot;</span>}
-                        </div>
-                        <span className="text-slate-500 font-mono text-[10px] shrink-0">
-                          {new Date(item.changedAt).toLocaleString()}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
 
             <div className="overflow-x-auto rounded-lg border border-slate-800">
               <table className="w-full text-left text-xs">
@@ -615,16 +564,14 @@ export default function EventsPage() {
         ) : null}
       </Modal>
 
-      {/* Action Modal (Acknowledge / Resolve / Reopen) */}
+      {/* Action Modal (Acknowledge / Resolve) */}
       <Modal
         isOpen={Boolean(activeActionModal && targetEvent)}
         onClose={() => setActiveActionModal(null)}
         title={
           activeActionModal === 'ACK'
             ? `Acknowledge Incident: ${targetEvent?.eventId}`
-            : activeActionModal === 'RESOLVE'
-            ? `Resolve Incident: ${targetEvent?.eventId}`
-            : `Reopen Incident: ${targetEvent?.eventId}`
+            : `Resolve Incident: ${targetEvent?.eventId}`
         }
         maxWidth="md"
       >
@@ -639,9 +586,7 @@ export default function EventsPage() {
           <p className="text-xs text-slate-400">
             {activeActionModal === 'ACK'
               ? 'Acknowledge operational ownership of this correlated incident. The incident will transition to ACKNOWLEDGED.'
-              : activeActionModal === 'RESOLVE'
-              ? 'Resolving this incident will transition its status to RESOLVED and automatically clear all constituent alarms.'
-              : 'Reopening this incident will transition its status back to OPEN and reactivate constituent alarms for active NOC tracking.'}
+              : 'Resolving this incident will transition its status to RESOLVED and automatically clear all constituent alarms.'}
           </p>
 
           <div>
@@ -670,9 +615,7 @@ export default function EventsPage() {
               className={`px-4 py-2 rounded-lg text-white text-xs font-semibold shadow-md flex items-center gap-1.5 transition-all ${
                 activeActionModal === 'ACK'
                   ? 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/30'
-                  : activeActionModal === 'RESOLVE'
-                  ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30'
-                  : 'bg-amber-600 hover:bg-amber-500 shadow-amber-600/30'
+                  : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30'
               }`}
             >
               {isSubmittingAction ? (
@@ -681,7 +624,7 @@ export default function EventsPage() {
                   <span>Processing...</span>
                 </>
               ) : (
-                <span>Confirm {activeActionModal === 'ACK' ? 'Acknowledgment' : activeActionModal === 'RESOLVE' ? 'Resolution' : 'Reopening'}</span>
+                <span>Confirm {activeActionModal === 'ACK' ? 'Acknowledgment' : 'Resolution'}</span>
               )}
             </button>
           </div>

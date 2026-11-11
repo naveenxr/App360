@@ -230,11 +230,6 @@ class RoleService {
       });
     });
 
-    const roleMap = {};
-    roles.forEach((r) => {
-      roleMap[(r.id || r._id).toString()] = r.name;
-    });
-
     const enrichedRoles = roles.map((r) => {
       const roleIdStr = (r.id || r._id).toString();
       return {
@@ -247,17 +242,13 @@ class RoleService {
       modules: MODULE_LIST,
       actions: ['create', 'read', 'update', 'delete'],
       roles: enrichedRoles,
-      users: users.map((u) => {
-        const roleIdStr = u.roleId ? u.roleId.toString() : null;
-        return {
-          id: u._id.toString(),
-          name: u.name,
-          email: u.email,
-          roleId: roleIdStr,
-          roleName: roleIdStr ? roleMap[roleIdStr] || 'UNKNOWN' : null,
-          isActive: u.isActive
-        };
-      })
+      users: users.map((u) => ({
+        id: u._id.toString(),
+        name: u.name,
+        email: u.email,
+        roleId: u.roleId ? u.roleId.toString() : null,
+        isActive: u.isActive
+      }))
     };
   }
 }
