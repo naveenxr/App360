@@ -69,6 +69,10 @@ class AlarmService {
       rawPayloadAudit: alarm.rawPayloadId || null
     };
   }
+
+  async getAlarmStats() {
+    return await AlarmRepository.getStats();
+  }
 }
 
 module.exports = new AlarmService();

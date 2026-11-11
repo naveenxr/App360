@@ -39,6 +39,26 @@ export const alarmService = {
   async getRawPayload(alarmId: string): Promise<RawAlarmPayload> {
     const response = await apiClient.get<{ success: boolean; data: RawAlarmPayload }>(`/alarms/${alarmId}/raw`);
     return response.data.data;
+  },
+
+  async getAlarmStats(): Promise<{
+    totalAlarms: number;
+    activeAlarms: number;
+    acknowledgedAlarms: number;
+    clearedAlarms: number;
+    severityCounts: Record<string, number>;
+  }> {
+    const response = await apiClient.get<{
+      success: boolean;
+      data: {
+        totalAlarms: number;
+        activeAlarms: number;
+        acknowledgedAlarms: number;
+        clearedAlarms: number;
+        severityCounts: Record<string, number>;
+      };
+    }>('/alarms/stats');
+    return response.data.data;
   }
 };
 

@@ -108,6 +108,20 @@ class IngestionService {
               } else {
                 sourceSummary.duplicateCount += 1;
                 totalDuplicates += 1;
+
+                // 5b. Ensure existing alarms lacking correlated events are correlated
+                if (!alarm.correlatedEventId) {
+                  try {
+                    const correlationResult = await correlationService.correlateAlarm(alarm);
+                    if (correlationResult.action === 'CREATED') {
+                      totalEventsCreated += 1;
+                    } else if (correlationResult.action === 'UPDATED' || correlationResult.action === 'MERGED') {
+                      totalEventsUpdated += 1;
+                    }
+                  } catch (corrErr) {
+                    console.error(`⚠️ Correlation error for unlinked alarm [${alarm.externalAlarmId}]:`, corrErr.message);
+                  }
+                }
               }
             } catch (itemErr) {
               console.error(`❌ Item normalization error in [${sourceId}]:`, itemErr.message);

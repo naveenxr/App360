@@ -62,3 +62,4 @@ const seedUsers = async () => {
 };
 
 module.exports = { seedUsers };
+

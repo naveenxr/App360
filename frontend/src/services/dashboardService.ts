@@ -5,18 +5,18 @@ import { DashboardSummary } from '../types/dashboard';
 export const dashboardService = {
   async getDashboardSummary(): Promise<DashboardSummary> {
     try {
-      const [stats, alarmsData] = await Promise.all([
+      const [stats, alarmStats] = await Promise.all([
         eventService.getCorrelationStats(),
-        alarmService.getAlarms({ limit: 1 })
+        alarmService.getAlarmStats()
       ]);
 
       return {
-        totalAlarms: stats.totalAlarms || alarmsData.total || 0,
-        activeAlarms: stats.totalAlarms,
+        totalAlarms: alarmStats.totalAlarms || 0,
+        activeAlarms: alarmStats.activeAlarms || 0,
         totalEvents: stats.totalEvents || 0,
         openEvents: stats.openEvents || 0,
         noiseReductionPercent: stats.noiseReductionPercent || 0,
-        severityDistribution: stats.severityCounts || {
+        severityDistribution: (alarmStats.severityCounts as DashboardSummary['severityDistribution']) || {
           CRITICAL: 0,
           MAJOR: 0,
           MINOR: 0,

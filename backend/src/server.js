@@ -4,6 +4,7 @@ const { connectDatabase, disconnectDatabase } = require('./config/database');
 const { seedRoles } = require('./utils/seedRoles');
 const { seedUsers } = require('./utils/seedUsers');
 const { seedTopology } = require('./utils/seedTopology');
+const correlationService = require('./services/correlationService');
 const { startIngestionJob, stopIngestionJob } = require('./jobs/ingestion.job');
 
 let server;
@@ -22,10 +23,16 @@ const startServer = async () => {
     // 4. Seed network topology sites and devices
     await seedTopology();
 
-    // 5. Start periodic background ingestion scheduler
+    // 5. Correlate any unlinked historical alarms
+    const unlinkedResult = await correlationService.processUnlinkedAlarms();
+    if (unlinkedResult.processedCount > 0) {
+      console.log(`🔗 Correlated ${unlinkedResult.processedCount} unlinked alarms on startup (${unlinkedResult.createdCount} events created, ${unlinkedResult.updatedCount} updated).`);
+    }
+
+    // 6. Start periodic background ingestion scheduler
     startIngestionJob();
 
-    // 6. Start HTTP listener
+    // 7. Start HTTP listener
     server = app.listen(config.PORT, () => {
       console.log(`=======================================================`);
       console.log(`🚀 App360 Backend running in [${config.NODE_ENV}] mode`);

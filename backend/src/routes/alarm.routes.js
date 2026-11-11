@@ -12,6 +12,9 @@ router.use(requirePermission('alarm', 'read'));
 // GET /api/alarms - List normalized alarms with filters and pagination
 router.get('/', (req, res, next) => AlarmController.getAlarms(req, res, next));
 
+// GET /api/alarms/stats - Get aggregate alarm statistics
+router.get('/stats', (req, res, next) => AlarmController.getAlarmStats(req, res, next));
+
 // GET /api/alarms/:id - Get specific alarm details
 router.get('/:id', (req, res, next) => AlarmController.getAlarmById(req, res, next));
 

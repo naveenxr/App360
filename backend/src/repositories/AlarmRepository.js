@@ -78,6 +78,44 @@ class AlarmRepository extends BaseRepository {
   async findByIdWithRaw(id) {
     return await this.model.findById(id).populate('rawPayloadId');
   }
+
+  /**
+   * Aggregates real alarm statistics directly from MongoDB
+   * @returns {Promise<Object>}
+   */
+  async getStats() {
+    const [totalAlarms, activeAlarms, acknowledgedAlarms, clearedAlarms, severityStats] = await Promise.all([
+      this.model.countDocuments({}),
+      this.model.countDocuments({ status: 'ACTIVE' }),
+      this.model.countDocuments({ status: 'ACKNOWLEDGED' }),
+      this.model.countDocuments({ status: 'CLEARED' }),
+      this.model.aggregate([
+        { $group: { _id: '$severity', count: { $sum: 1 } } }
+      ])
+    ]);
+
+    const severityCounts = {
+      CRITICAL: 0,
+      MAJOR: 0,
+      MINOR: 0,
+      WARNING: 0,
+      INFO: 0
+    };
+
+    severityStats.forEach((s) => {
+      if (severityCounts.hasOwnProperty(s._id)) {
+        severityCounts[s._id] = s.count;
+      }
+    });
+
+    return {
+      totalAlarms,
+      activeAlarms,
+      acknowledgedAlarms,
+      clearedAlarms,
+      severityCounts
+    };
+  }
 }
 
 module.exports = new AlarmRepository();

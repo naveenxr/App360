@@ -47,6 +47,15 @@ class AlarmController {
       next(error);
     }
   }
+
+  async getAlarmStats(req, res, next) {
+    try {
+      const stats = await AlarmService.getAlarmStats();
+      return sendSuccess(res, stats, 'Alarm statistics retrieved successfully', 200);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new AlarmController();

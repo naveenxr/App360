@@ -157,11 +157,12 @@ class EventService {
   }
 
   async getCorrelationStats() {
-    const [eventStats, totalAlarms] = await Promise.all([
+    const [eventStats, alarmStats] = await Promise.all([
       EventRepository.getStats(),
-      AlarmRepository.count({})
+      AlarmRepository.getStats()
     ]);
 
+    const totalAlarms = alarmStats.totalAlarms;
     const noiseReductionPercent =
       totalAlarms > 0
         ? Math.round(((totalAlarms - eventStats.totalEvents) / totalAlarms) * 100)
@@ -170,6 +171,8 @@ class EventService {
     return {
       ...eventStats,
       totalAlarms,
+      activeAlarms: alarmStats.activeAlarms,
+      alarmSeverityCounts: alarmStats.severityCounts,
       noiseReductionRatio: `${totalAlarms}:${eventStats.totalEvents}`,
       noiseReductionPercent: Math.max(0, noiseReductionPercent)
     };
