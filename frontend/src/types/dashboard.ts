@@ -8,3 +8,4 @@ export interface DashboardSummary {
   noiseReductionPercent: number;
   severityDistribution: Record<SeverityLevel, number>;
 }
+

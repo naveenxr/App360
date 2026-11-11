@@ -140,3 +140,4 @@ export const RecentAlarms: React.FC<RecentAlarmsProps> = ({ alarms, isLoading })
 };
 
 export default RecentAlarms;
+

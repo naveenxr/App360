@@ -38,3 +38,4 @@ export interface AlarmFilters {
   page?: number;
   limit?: number;
 }
+

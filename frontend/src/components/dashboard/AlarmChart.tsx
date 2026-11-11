@@ -75,3 +75,4 @@ export const AlarmChart: React.FC<AlarmChartProps> = ({ distribution }) => {
 };
 
 export default AlarmChart;
+

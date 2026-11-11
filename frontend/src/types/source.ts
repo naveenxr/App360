@@ -33,3 +33,4 @@ export interface TriggerIngestionResponse {
   durationMs: number;
   sourceResults: SourceResult[];
 }
+
